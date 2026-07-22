@@ -17,17 +17,18 @@ import type {
   GridItemProps,
   GridProps,
   ItemsProps,
+  PinnedGridProps,
+  ResolvedGridProps,
 } from "./types";
 import { useReducedMotion, toCss, spanFor } from "./utils";
 
-const DEFAULTS: GridProps = {
+const DEFAULTS: Omit<ResolvedGridProps, "animate" | "style"> = {
   cols: 7,
   rows: 7,
   gap: 8,
   fill: true,
   rowHeight: 96,
   showGrid: false,
-  animate: false,
   className: "",
 };
 
@@ -128,16 +129,7 @@ const PinnedGrid = ({
   showGrid,
   className,
   style,
-}: {
-  items: React.ReactElement<GridItemProps>[];
-  cols: number;
-  gap: number | string;
-  fill: boolean;
-  rowHeight: number | string;
-  showGrid: boolean;
-  className?: string;
-  style?: CSSProperties;
-}) => {
+}: PinnedGridProps) => {
   const spans = useMemo(
     () => items.map((item) => spanFor(item.props, cols)),
     [items, cols],
@@ -179,51 +171,16 @@ const PinnedGrid = ({
   );
 };
 
-type Maybe<T> = NonNullable<T> | undefined;
+export const Grid = memo(({ children, animate, style, ...rest }: GridProps) => {
+  const resolved: ResolvedGridProps = { ...DEFAULTS, ...rest, animate, style };
+  const items = gridItems({ children });
+  const pinned = items.some(
+    (c) => c.props.cols != null || c.props.rows != null,
+  );
 
-type MaybeAll<T> = {
-  [K in keyof T]: T[K] extends Maybe<unknown> ? T[K] : Maybe<T[K]>;
-};
-
-export const Grid = memo(
-  ({
-    children,
-    cols = 7,
-    rows = 7,
-    gap = 8,
-    fill = true,
-    rowHeight = 96,
-    showGrid = false,
-    animate,
-    ...args
-  }: MaybeAll<GridProps>) => {
-    const items = gridItems({ children });
-    const pinned = items.some(
-      (c) => c.props.cols != null || c.props.rows != null,
-    );
-
-    return pinned ? (
-      <PinnedGrid
-        items={items}
-        cols={cols}
-        gap={gap}
-        fill={fill}
-        rowHeight={rowHeight}
-        showGrid={showGrid}
-        {...args}
-      />
-    ) : (
-      <FreeGrid
-        items={items}
-        cols={cols}
-        rows={rows}
-        gap={gap}
-        fill={fill}
-        rowHeight={rowHeight}
-        animate={animate}
-        showGrid={showGrid}
-        {...args}
-      />
-    );
-  },
-);
+  return pinned ? (
+    <PinnedGrid items={items} {...resolved} />
+  ) : (
+    <FreeGrid items={items} {...resolved} />
+  );
+});

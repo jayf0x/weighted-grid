@@ -40,26 +40,39 @@ export type GridItemProps = PropsWithChildren<{
 export const GridItem = (_: GridItemProps): null => null;
 
 export interface GridProps extends PropsWithChildren {
-  cols: number;
-  rows: number;
-  gap: number | string;
+  cols?: number;
+  rows?: number;
+  gap?: number | string;
   /** `true` (default): stretch to fill the container's height. `false`: fixed `rowHeight` per
    * row, container grows downward. */
-  fill: boolean;
+  fill?: boolean;
   /** Row height when `fill` is false. Ignored while filling. */
-  rowHeight: number | string;
+  rowHeight?: number | string;
   /** Smoothly transition position/size when weights or items change. Defaults to `true`, but
-   * `false` under `prefers-reduced-motion` unless set explicitly. */
-  animate: boolean;
-  showGrid: boolean;
-  className: string;
+   * `false` under `prefers-reduced-motion` unless set explicitly. `undefined` means "auto" —
+   * distinct from `false`, which forces animation off. */
+  animate?: boolean;
+  showGrid?: boolean;
+  className?: string;
   style?: CSSProperties;
 }
 
-export interface FreeGridProps extends GridProps {
+/** `GridProps` with every default resolved, minus `children` (consumed separately as `items`).
+ * `animate` stays optional — its `undefined` state ("follow prefers-reduced-motion") is
+ * meaningful and distinct from `false`. */
+export type ResolvedGridProps = Required<
+  Omit<GridProps, "children" | "style" | "animate">
+> & {
+  animate?: boolean;
+  style?: CSSProperties;
+};
+
+export interface FreeGridProps extends ResolvedGridProps {
+  items: React.ReactElement<GridItemProps>[];
+}
+
+export interface PinnedGridProps extends Omit<ResolvedGridProps, "animate"> {
   items: React.ReactElement<GridItemProps>[];
 }
 
 export type ItemsProps = { children?: ReactNode };
-
-type Defined<T> = T extends null | undefined ? never : T;
