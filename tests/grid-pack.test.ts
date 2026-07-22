@@ -5,7 +5,8 @@ const EPS = 1e-9;
 
 const equalItems = (n: number): GridInput[] => Array.from({ length: n }, (_, i) => ({ id: i }));
 
-const totalWeight = (items: GridInput[]): number => items.reduce((s, it) => s + (it.weight && it.weight > 0 ? it.weight : 1), 0);
+const totalWeight = (items: GridInput[]): number =>
+  items.reduce((s, it) => s + (it.weight && it.weight > 0 ? it.weight : 1), 0);
 
 describe('packGrid', () => {
   test('single item fills the whole unit square', () => {
@@ -46,7 +47,10 @@ describe('packGrid', () => {
   });
 
   test('area fidelity: each rect area / total area ≈ weight / total weight', () => {
-    const items: GridInput[] = [{ id: 'hero', weight: 4 }, ...Array.from({ length: 12 }, (_, i) => ({ id: i, weight: 1 }))];
+    const items: GridInput[] = [
+      { id: 'hero', weight: 4 },
+      ...Array.from({ length: 12 }, (_, i) => ({ id: i, weight: 1 })),
+    ];
     const placed = packGrid(items, { cols: 5, rows: 5 });
     const totalW = totalWeight(items);
     for (const it of items) {

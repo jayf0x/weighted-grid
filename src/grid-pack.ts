@@ -39,7 +39,14 @@ type Weighted = { id: GridInput['id']; weight: number };
 const PHI = (1 + Math.sqrt(5)) / 2;
 
 /** Lays `row` left-to-right across the fixed-height strip `[x0,x1] x [y0,y1]`. */
-const dice = (row: Weighted[], x0: number, y0: number, x1: number, y1: number, out: Map<GridInput['id'], Rect>): void => {
+const dice = (
+  row: Weighted[],
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  out: Map<GridInput['id'], Rect>,
+): void => {
   const total = row.reduce((s, it) => s + it.weight, 0);
   const k = total > 0 ? (x1 - x0) / total : 0;
   let x = x0;
@@ -51,7 +58,14 @@ const dice = (row: Weighted[], x0: number, y0: number, x1: number, y1: number, o
 };
 
 /** Lays `row` top-to-bottom down the fixed-width strip `[x0,x1] x [y0,y1]`. */
-const slice = (row: Weighted[], x0: number, y0: number, x1: number, y1: number, out: Map<GridInput['id'], Rect>): void => {
+const slice = (
+  row: Weighted[],
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  out: Map<GridInput['id'], Rect>,
+): void => {
   const total = row.reduce((s, it) => s + it.weight, 0);
   const k = total > 0 ? (y1 - y0) / total : 0;
   let y = y0;
@@ -70,7 +84,14 @@ const slice = (row: Weighted[], x0: number, y0: number, x1: number, y1: number, 
  * others, and so its position, can shift when its weight crosses another item's — inherent to
  * *every* aspect-ratio-optimal treemap, not a bug in this port (see `docs/why.md`).
  */
-const squarify = (items: Weighted[], x0: number, y0: number, x1: number, y1: number, out: Map<GridInput['id'], Rect>): void => {
+const squarify = (
+  items: Weighted[],
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  out: Map<GridInput['id'], Rect>,
+): void => {
   const n = items.length;
   let value = items.reduce((s, it) => s + it.weight, 0);
   let i0 = 0;
@@ -121,12 +142,16 @@ const squarify = (items: Weighted[], x0: number, y0: number, x1: number, y1: num
  * The nominal `[cols x rows]` aspect ratio squarify targets. A soft grid never drops an item —
  * `rows` grows to fit if there are more items than `cols * rows`.
  */
-export const neededRows = (count: number, cols: number, rows: number): number => Math.max(rows, Math.ceil(count / cols));
+export const neededRows = (count: number, cols: number, rows: number): number =>
+  Math.max(rows, Math.ceil(count / cols));
 
 /**
  * Places every item as a fractional rect tiling the unit square. Output order matches input.
  */
-export const packGrid = <T extends GridInput>(items: T[], { cols = 7, rows = 7 }: GridPackOptions = {}): GridPlacement[] => {
+export const packGrid = <T extends GridInput>(
+  items: T[],
+  { cols = 7, rows = 7 }: GridPackOptions = {},
+): GridPlacement[] => {
   if (items.length === 0) return [];
   if (cols < 1) throw new Error(`cols must be >= 1, got ${cols}`);
 
