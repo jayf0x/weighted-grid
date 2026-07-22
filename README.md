@@ -15,9 +15,9 @@
 
 <!-- README_HEAD:END -->
 
-A zero-dependency, weight-driven, content-agnostic React grid that fills its container. Drop in
-arbitrary children, optionally tag a few with a `weight`, and the layout resolves itself — no
-coordinates, no manual math.
+A zero-dependency, weight-driven React grid that fills its container, agnostic to what's inside
+each cell. Drop in arbitrary children, optionally tag a few with a `weight`, and the layout
+resolves itself — no coordinates, no manual math.
 
 **[▶ Live demo](https://jayf0x.github.io/weighted-grid/)**
 

@@ -9,32 +9,14 @@
  * output rects always tile the unit square with no gaps or overlaps.
  *
  * `cols`/`rows` only shape the *nominal aspect ratio* squarify targets (more of either spreads
- * items out before they get cramped) — they are not a hard grid; output is fractional.
+ * items out before they get cramped) — they are not a hard grid; output is fractional, and edges
+ * are never snapped to integer cell lines.
  */
 
-export type GridInput = {
-  /** Stable identifier echoed back on the placement. */
-  id: string | number;
-  /** Relative area. Defaults to 1. A 2 gets ~twice the area of a 1. */
-  weight?: number;
-};
-
-export type GridPlacement = {
-  id: string | number;
-  /** Fractions of the unit square (0..1); guaranteed to tile it exactly. */
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-};
-
-export type GridPackOptions = {
-  cols?: number;
-  rows?: number;
-};
+import type { GridInput, GridPackOptions, GridPlacement } from "./types";
 
 type Rect = { x: number; y: number; w: number; h: number };
-type Weighted = { id: GridInput['id']; weight: number };
+type Weighted = { id: GridInput["id"]; weight: number };
 
 const PHI = (1 + Math.sqrt(5)) / 2;
 
@@ -45,7 +27,7 @@ const dice = (
   y0: number,
   x1: number,
   y1: number,
-  out: Map<GridInput['id'], Rect>,
+  out: Map<GridInput["id"], Rect>,
 ): void => {
   const total = row.reduce((s, it) => s + it.weight, 0);
   const k = total > 0 ? (x1 - x0) / total : 0;
@@ -64,7 +46,7 @@ const slice = (
   y0: number,
   x1: number,
   y1: number,
-  out: Map<GridInput['id'], Rect>,
+  out: Map<GridInput["id"], Rect>,
 ): void => {
   const total = row.reduce((s, it) => s + it.weight, 0);
   const k = total > 0 ? (y1 - y0) / total : 0;
@@ -90,7 +72,7 @@ const squarify = (
   y0: number,
   x1: number,
   y1: number,
-  out: Map<GridInput['id'], Rect>,
+  out: Map<GridInput["id"], Rect>,
 ): void => {
   const n = items.length;
   let value = items.reduce((s, it) => s + it.weight, 0);
@@ -156,19 +138,23 @@ export const packGrid = <T extends GridInput>(
   if (cols < 1) throw new Error(`cols must be >= 1, got ${cols}`);
 
   const rowsUsed = neededRows(items.length, cols, rows);
-  const weighted: Weighted[] = items.map((it) => ({ id: it.id, weight: it.weight && it.weight > 0 ? it.weight : 1 }));
+  const weighted: Weighted[] = items.map((it) => ({
+    id: it.id,
+    weight: it.weight && it.weight > 0 ? it.weight : 1,
+  }));
   const sorted = [...weighted].sort((a, b) => b.weight - a.weight);
 
-  const out = new Map<GridInput['id'], Rect>();
+  const out = new Map<GridInput["id"], Rect>();
   squarify(sorted, 0, 0, cols, rowsUsed, out);
 
   return items.map((it) => {
     const r = out.get(it.id) as Rect;
-    return { id: it.id, x: r.x / cols, y: r.y / rowsUsed, w: r.w / cols, h: r.h / rowsUsed };
+    return {
+      id: it.id,
+      x: r.x / cols,
+      y: r.y / rowsUsed,
+      w: r.w / cols,
+      h: r.h / rowsUsed,
+    };
   });
 };
-
-// ponytail: cols/rows only steer squarify's nominal aspect ratio, not a hard pixel snap-to-grid —
-// handover floated snapping rect edges to integer cell lines too, skipped as speculative until a
-// pixel-crisp look is actually requested; add it as a post-process (round each edge to the nearest
-// 1/cols or 1/rows) if that day comes, same-value edges still round identically so it won't reopen gaps.

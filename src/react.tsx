@@ -1,160 +1,109 @@
 /**
  * `@weighted-grid/react` — thin React wrapper over {@link ./grid-pack}.
  *
- * The core computes fractional rects (a squarified treemap); the DOM does everything else via
- * absolute positioning in percentages, so the container fills exactly with no gaps regardless of
- * its actual pixel aspect. Sizing is driven purely by each item's `weight` (relative area) — there
- * are no pixel sizes, because a grid that resizes with its container has no use for fixed pixels.
- * Container resize is handled by the browser (percentages), so there is no re-pack on resize — the
- * component only re-packs when the items or weights change.
- *
- * `react` is a peer dependency (not bundled) so this stays tree-shakeable and framework-neutral.
+ * The core computes fractional rects; the DOM does the rest via absolute-positioned percentages,
+ * so `<Grid>` never re-packs on resize. `react` is a peer dependency, not bundled.
  */
-import { Children, type CSSProperties, isValidElement, type ReactNode, useMemo } from 'react';
-import { neededRows, packGrid } from './grid-pack';
+import {
+  memo,
+  useMemo,
+  isValidElement,
+  Children,
+  type CSSProperties,
+} from "react";
+import { neededRows, packGrid } from "./grid-pack";
+import type {
+  FreeGridProps,
+  GridItemProps,
+  GridProps,
+  ItemsProps,
+} from "./types";
+import { useReducedMotion, toCss, spanFor } from "./utils";
 
-export type GridItemProps = {
-  children?: ReactNode;
-  /** Relative area. Defaults to 1; a 2 gets ~twice the space of a 1. Ignored on the axis pinned by
-   * `cols`/`rows` below (that axis is exact, not weighted). */
-  weight?: number;
-  /**
-   * Pin this item to exactly `cols` grid columns instead of an auto-computed, weight-driven width.
-   * Giving *any* item a `cols` or `rows` switches the whole `<Grid>` from the free-fill
-   * treemap to native CSS Grid (`grid-auto-flow: dense`) — see `fill`'s doc for what that trades
-   * away. If only `cols` is given, the row span still comes from `weight` (rounded).
-   */
-  cols?: number;
-  /** Pin this item to exactly `rows` grid rows. See `cols`. */
-  rows?: number;
+const DEFAULTS: GridProps = {
+  cols: 7,
+  rows: 7,
+  gap: 8,
+  fill: true,
+  rowHeight: 96,
+  showGrid: false,
+  animate: false,
+  className: "",
 };
 
-/** Marker component — Grid reads its props and renders its children in the assigned block. */
-export const GridItem = (_: GridItemProps): null => null;
+const gridBackground = (cols: number): CSSProperties => ({
+  backgroundImage:
+    "linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 0)",
+  backgroundSize: `calc(100% / ${cols}) 100%`,
+});
 
-export type GridProps = {
-  children?: ReactNode;
-  cols?: number;
-  rows?: number;
-  gap?: number | string;
-  /**
-   * `true` (default): stretch to fill the container's height exactly.
-   * `false`: keep the columns fixed and flow downward at `rowHeight` per row (the container grows).
-   * The item placement is identical either way — only the overall height changes.
-   */
-  fill?: boolean;
-  /** Row height when `fill` is false. Ignored when filling. */
-  rowHeight?: number | string;
-  /**
-   * `true` (default): items transition their position/size smoothly when weights or the item set
-   * change, instead of snapping. Off for users who prefer reduced motion, regardless of this prop.
-   * No effect in pinned-span mode (see `GridItemProps.cols`) — CSS Grid track placement isn't a
-   * transitionable value; animating that needs a FLIP-style JS technique, which is out of scope
-   * for a placement-only library.
-   */
-  animate?: boolean;
-  showGrid?: boolean;
-  className?: string;
-  style?: CSSProperties;
-};
-
-/** Row/column span for one item in pinned-span mode. The pinned axis is exact; the free axis (if
- * any) falls back to `weight`, and an item with neither pin just aims for a `weight`-sized square. */
-export const spanFor = (props: GridItemProps, cols: number): { colSpan: number; rowSpan: number } => {
-  const weight = typeof props.weight === 'number' && props.weight > 0 ? props.weight : 1;
-  const clampCols = (n: number) => Math.max(1, Math.min(cols, Math.round(n)));
-  if (props.cols != null && props.rows != null) return { colSpan: clampCols(props.cols), rowSpan: Math.max(1, Math.round(props.rows)) };
-  if (props.cols != null) return { colSpan: clampCols(props.cols), rowSpan: Math.max(1, Math.round(weight)) };
-  if (props.rows != null) return { colSpan: clampCols(weight), rowSpan: Math.max(1, Math.round(props.rows)) };
-  const side = Math.max(1, Math.round(Math.sqrt(weight)));
-  return { colSpan: Math.min(cols, side), rowSpan: side };
-};
-
-export const Grid = ({
+const gridItems = ({
   children,
-  cols = 7,
-  rows = 7,
-  gap = 8,
-  fill = true,
-  rowHeight = 96,
-  animate = true,
-  showGrid = false,
+}: ItemsProps): React.ReactElement<GridItemProps>[] =>
+  Children.toArray(children).filter(
+    isValidElement,
+  ) as React.ReactElement<GridItemProps>[];
+
+/** Free-fill mode: items placed by the squarified treemap, absolutely positioned as percentages. */
+const FreeGrid = ({
+  items,
+  cols,
+  rows,
+  gap,
+  fill,
+  rowHeight,
+  animate,
+  showGrid,
   className,
   style,
-}: GridProps) => {
-  const items = Children.toArray(children).filter(isValidElement) as React.ReactElement<GridItemProps>[];
-  const weights = items.map((c) => (typeof c.props.weight === 'number' && c.props.weight > 0 ? c.props.weight : 1));
-  const pinned = items.some((c) => c.props.cols != null || c.props.rows != null);
-
-  const placements = useMemo(
-    () => (pinned ? [] : packGrid(weights.map((weight, id) => ({ id, weight })), { cols, rows })),
-    // Weights + count drive the layout; re-pack only when those change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pinned, weights.join(','), cols, rows],
+}: FreeGridProps) => {
+  const weights = items.map((c) =>
+    typeof c.props.weight === "number" && c.props.weight > 0
+      ? c.props.weight
+      : 1,
   );
 
-  const gapValue = typeof gap === 'number' ? `${gap}px` : gap;
-  const rowHeightValue = typeof rowHeight === 'number' ? `${rowHeight}px` : rowHeight;
-  // ponytail: read once per render, not watched live — a user flipping the OS motion setting
-  // mid-session and expecting this exact grid to react instantly is a vanishingly small case.
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const transition = animate && !reducedMotion ? 'left 260ms ease, top 260ms ease, width 260ms ease, height 260ms ease' : undefined;
+  const placements = useMemo(
+    () =>
+      packGrid(
+        weights.map((weight, id) => ({ id, weight })),
+        { cols, rows },
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [weights.join(","), cols, rows],
+  );
 
-  // Pinned-span mode: at least one item wants an exact col/row span, so hand placement to native
-  // CSS Grid (`grid-auto-flow: dense`) instead of the free-fill treemap — packing arbitrary fixed
-  // spans around flexible ones is a bin-packing problem the browser already solves well; not worth
-  // reinventing here. Trade-off: `dense` can visually reorder items to fill gaps, and grid-track
-  // changes don't support the `transition` used above (no FLIP-style animation in pinned mode).
-  if (pinned) {
-    const gridStyle: CSSProperties = {
-      display: 'grid',
-      gridTemplateColumns: `repeat(${cols}, 1fr)`,
-      gridAutoFlow: 'row dense',
-      gap: gapValue,
-      ...(fill ? { gridAutoRows: '1fr', height: '100%' } : { gridAutoRows: rowHeightValue }),
-      ...(showGrid
-        ? { backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 0)', backgroundSize: `calc(100% / ${cols}) 100%` }
-        : {}),
-      ...style,
-    };
-    return (
-      <div className={className} style={gridStyle}>
-        {items.map((item, i) => {
-          const { colSpan, rowSpan } = spanFor(item.props, cols);
-          return (
-            <div key={i} style={{ gridColumn: `span ${colSpan}`, gridRow: `span ${rowSpan}`, minWidth: 0, minHeight: 0 }}>
-              {item.props.children}
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
+  const reducedMotion = useReducedMotion();
 
   const containerStyle: CSSProperties = {
-    position: 'relative',
-    width: '100%',
-    ...(fill ? { height: '100%' } : { height: `calc(${rowHeightValue} * ${neededRows(items.length, cols, rows)})` }),
-    ...(showGrid
-      ? { backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 0)', backgroundSize: `calc(100% / ${cols}) 100%` }
-      : {}),
+    position: "relative",
+    width: "100%",
+    height: fill
+      ? "100%"
+      : `calc(${toCss(rowHeight)} * ${neededRows(items.length, cols, rows)})`,
+    ...(showGrid ? gridBackground(cols) : {}),
     ...style,
   };
 
   return (
-    <div className={className} style={containerStyle}>
+    <div className={className} style={containerStyle} role="grid">
       {placements.map((p, i) => (
         <div
           key={p.id}
+          role="gridcell"
+          tabIndex={0}
           style={{
-            position: 'absolute',
+            position: "absolute",
             left: `${p.x * 100}%`,
             top: `${p.y * 100}%`,
             width: `${p.w * 100}%`,
             height: `${p.h * 100}%`,
-            transition,
-            padding: `calc(${gapValue} / 2)`,
-            boxSizing: 'border-box',
+            transition:
+              (animate ?? !reducedMotion)
+                ? "left 260ms ease, top 260ms ease, width 260ms ease, height 260ms ease"
+                : undefined,
+            padding: `calc(${toCss(gap)} / 2)`,
+            boxSizing: "border-box",
             minWidth: 0,
             minHeight: 0,
           }}
@@ -165,3 +114,116 @@ export const Grid = ({
     </div>
   );
 };
+
+/** Pinned-span mode: at least one item wants an exact col/row span, so hand placement to native
+ * CSS Grid (`grid-auto-flow: dense`) — packing fixed spans around flexible ones is a bin-packing
+ * problem the browser already solves. Trade-off: `dense` can reorder items to fill gaps, and grid
+ * track changes don't support the transition `FreeGrid` uses. */
+const PinnedGrid = ({
+  items,
+  cols,
+  gap,
+  fill,
+  rowHeight,
+  showGrid,
+  className,
+  style,
+}: {
+  items: React.ReactElement<GridItemProps>[];
+  cols: number;
+  gap: number | string;
+  fill: boolean;
+  rowHeight: number | string;
+  showGrid: boolean;
+  className?: string;
+  style?: CSSProperties;
+}) => {
+  const spans = useMemo(
+    () => items.map((item) => spanFor(item.props, cols)),
+    [items, cols],
+  );
+
+  const gridStyle: CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: `repeat(${cols}, 1fr)`,
+    gridAutoFlow: "row dense",
+    gap: toCss(gap),
+    ...(fill
+      ? { gridAutoRows: "1fr", height: "100%" }
+      : { gridAutoRows: toCss(rowHeight) }),
+    ...(showGrid ? gridBackground(cols) : {}),
+    ...style,
+  };
+
+  return (
+    <div className={className} style={gridStyle} role="grid">
+      {items.map((item, i) => {
+        const { colSpan, rowSpan } = spans[i];
+        return (
+          <div
+            key={i}
+            role="gridcell"
+            tabIndex={0}
+            style={{
+              gridColumn: `span ${colSpan}`,
+              gridRow: `span ${rowSpan}`,
+              minWidth: 0,
+              minHeight: 0,
+            }}
+          >
+            {item.props.children}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+type Maybe<T> = NonNullable<T> | undefined;
+
+type MaybeAll<T> = {
+  [K in keyof T]: T[K] extends Maybe<unknown> ? T[K] : Maybe<T[K]>;
+};
+
+export const Grid = memo(
+  ({
+    children,
+    cols = 7,
+    rows = 7,
+    gap = 8,
+    fill = true,
+    rowHeight = 96,
+    showGrid = false,
+    animate,
+    ...args
+  }: MaybeAll<GridProps>) => {
+    const items = gridItems({ children });
+    const pinned = items.some(
+      (c) => c.props.cols != null || c.props.rows != null,
+    );
+
+    return pinned ? (
+      <PinnedGrid
+        items={items}
+        cols={cols}
+        gap={gap}
+        fill={fill}
+        rowHeight={rowHeight}
+        showGrid={showGrid}
+        {...args}
+      />
+    ) : (
+      <FreeGrid
+        items={items}
+        cols={cols}
+        rows={rows}
+        gap={gap}
+        fill={fill}
+        rowHeight={rowHeight}
+        animate={animate}
+        showGrid={showGrid}
+        {...args}
+      />
+    );
+  },
+);

@@ -12,12 +12,12 @@ export default defineConfig({
         index: resolve(__dirname, 'src/index.ts'),
         react: resolve(__dirname, 'src/react.tsx'),
       },
-      formats: ['es', 'cjs'],
-      fileName: (format, name) => `${name}.${format === 'es' ? 'js' : 'cjs'}`,
+      formats: ['es'],
+      fileName: (_format, name) => `${name}.js`,
     },
     target: 'es2020',
     minify: 'oxc',
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
       // Keep React out of the bundle so `@weighted-grid/react` tree-shakes away when unused.
       external: ['react', 'react-dom', 'react/jsx-runtime'],
