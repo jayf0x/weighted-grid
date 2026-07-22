@@ -1,8 +1,11 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
+import { snapBuild } from 'byte-snap';
+import include from 'plugin-include';
 
 export default defineConfig({
+  plugins: [dts({ rollupTypes: true }), snapBuild.vite({ dir: 'dist' }), include('./README.md')],
   build: {
     lib: {
       entry: {
@@ -12,6 +15,8 @@ export default defineConfig({
       formats: ['es', 'cjs'],
       fileName: (format, name) => `${name}.${format === 'es' ? 'js' : 'cjs'}`,
     },
+    target: 'es2020',
+    minify: 'oxc',
     sourcemap: true,
     rollupOptions: {
       // Keep React out of the bundle so `@rect-pack/react` tree-shakes away when unused.
@@ -19,5 +24,4 @@ export default defineConfig({
       output: { exports: 'named' },
     },
   },
-  plugins: [dts({ rollupTypes: true })],
 });

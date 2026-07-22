@@ -1,12 +1,13 @@
 import { tintFor } from '../utils/colors.js';
 
-/** One placed cell. `hero` renders in the accent color; everything else is a quiet neutral tint,
- * so the eye reads weight/area rather than color. */
-export function Block({ i, weight, hero }) {
-  if (hero) {
+/** One placed cell. Labeled (A/B/C) blocks render in the accent color; everything else is a quiet
+ * neutral tint, so the eye reads weight/area rather than color. */
+export function Block({ i, weight, label }) {
+  if (label) {
     return (
-      <div className="rect-enter flex h-full w-full items-center justify-center rounded-md bg-accent text-sm font-medium tracking-tight text-white">
-        {weight}×
+      <div className="rect-enter flex h-full w-full flex-col items-center justify-center gap-0.5 rounded-md bg-accent text-sm font-medium tracking-tight text-white">
+        <span>{label}</span>
+        <span className="text-[11px] font-normal opacity-80">{weight}×</span>
       </div>
     );
   }

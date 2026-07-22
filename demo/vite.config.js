@@ -17,6 +17,11 @@ const jsxDevRuntime = require.resolve('react/jsx-dev-runtime');
 
 export default defineConfig({
   base: process.env.GITHUB_PAGES ? '/rect-pack/' : '/',
+  build: {
+    target: 'es2020',
+    minify: 'oxc',
+    cssMinify: true,
+  },
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: [

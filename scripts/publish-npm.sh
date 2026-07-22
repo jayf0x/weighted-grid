@@ -11,20 +11,8 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
 fi
 
 # ── version bump ──────────────────────────────────────────────────────────────
-CURRENT=$(bun -e "import pkg from './package.json' with {type:'json'}; process.stdout.write(pkg.version)")
-MAJOR=$(echo "$CURRENT" | cut -d. -f1)
-MINOR=$(echo "$CURRENT" | cut -d. -f2)
-PATCH=$(echo "$CURRENT" | cut -d. -f3)
-
-BUMP="${BUMP:-patch}"
-case "$BUMP" in
-  major) MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0 ;;
-  minor) MINOR=$((MINOR+1)); PATCH=0 ;;
-  patch) PATCH=$((PATCH+1)) ;;
-  *) echo "✗ Unknown BUMP: $BUMP (patch/minor/major)"; exit 1 ;;
-esac
-
-NEW="$MAJOR.$MINOR.$PATCH"
+# BUMP=patch|minor|major, or pass an explicit version: BUMP=1.2.0
+NEW=$(bash "$(dirname "$0")/patch-json.sh" "${BUMP:-patch}")
 TAG="v$NEW"
 
 if git rev-parse "$TAG" >/dev/null 2>&1; then
@@ -32,14 +20,7 @@ if git rev-parse "$TAG" >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "Bumping $CURRENT → $NEW"
-
-bun -e "
-  import { readFileSync, writeFileSync } from 'fs';
-  const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
-  pkg.version = '$NEW';
-  writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-"
+echo "Bumped to $NEW"
 
 # ── build + typecheck + test ─────────────────────────────────────────────────
 bun run build

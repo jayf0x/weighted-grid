@@ -11,7 +11,7 @@ export function DemoPanel({ title, caption, blocks, cols, fill, rowHeight }) {
         <GridPack cols={cols} gap={6} fill={fill} rowHeight={rowHeight} className="h-full w-full">
           {blocks.map((b) => (
             <GridItem key={b.i} weight={b.weight}>
-              <Block i={b.i} weight={b.weight} hero={b.i === 0} />
+              <Block i={b.i} weight={b.weight} label={b.label} />
             </GridItem>
           ))}
         </GridPack>

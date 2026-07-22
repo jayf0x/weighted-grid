@@ -19,6 +19,10 @@ coordinates, no manual math. See [`docs/why.md`](docs/why.md) for the product ra
 ## Install
 
 ```bash
+bun add rect-pack
+```
+
+```bash
 npm install rect-pack
 ```
 
