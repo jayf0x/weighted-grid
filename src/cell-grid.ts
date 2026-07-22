@@ -1,4 +1,4 @@
-import { log } from './log';
+import { log } from './utils';
 import type { Rectangle } from './types';
 
 /**

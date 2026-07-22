@@ -18,3 +18,12 @@ export const maxWidthHeight = (list: RectangleSize[]): RectangleSize =>
 
 export const totalArea = (list: RectangleSize[]): number =>
   list.reduce((area, rect) => area + rect.width * rect.height, 0);
+
+
+
+const isDev = typeof process === 'undefined' || process.env?.NODE_ENV !== 'production';
+
+/** Logs in non-production builds only; no-op otherwise. */
+export const log = (...args: unknown[]): void => {
+  if (isDev) console.log('[RectPack]', ...args);
+};

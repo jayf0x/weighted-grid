@@ -1,5 +1,5 @@
 import { placeAll } from './cell-grid';
-import { log } from './log';
+import { log } from './utils';
 import type { Rectangle, RectangleSize } from './types';
 import { maxWidthHeight, sumWidthHeight, totalArea } from './utils';
 

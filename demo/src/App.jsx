@@ -1,5 +1,22 @@
 import { rectanglePacker } from 'rect-pack';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { GridItem, GridPack } from 'rect-pack/react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+/** A demo cell: colored box that fills whatever grid slot GridPack assigns it. */
+function Cell({ i, label, highlight }) {
+  return (
+    <div
+      className={`rect-enter flex h-full w-full items-center justify-center overflow-hidden border text-[10px] font-mono ${highlight ? 'ring-2 ring-white/70 text-white' : 'text-ink/80'}`}
+      style={{
+        background: `color-mix(in oklab, ${PALETTE[i % PALETTE.length]} 55%, transparent)`,
+        borderColor: PALETTE[i % PALETTE.length],
+        animationDelay: `${Math.min(i * 14, 500)}ms`,
+      }}
+    >
+      {label}
+    </div>
+  );
+}
 
 const PALETTE = ['#00e5c7', '#ff7a1a', '#4ea1ff', '#ffd23f', '#ff5c8a', '#7ce38b'];
 
@@ -52,6 +69,8 @@ export function App() {
   const [maxSize, setMaxSize] = useState(130);
   const [result, setResult] = useState(() => pack(22, 20, 130));
   const [runId, setRunId] = useState(0);
+  const [gridCols, setGridCols] = useState(7);
+  const [heroWeight, setHeroWeight] = useState(6);
   const stageRef = useRef(null);
   const [stageSize, setStageSize] = useState({ w: 800, h: 500 });
 
@@ -187,6 +206,43 @@ export function App() {
           </div>
         </section>
       </main>
+
+      <section className="relative z-10 mx-auto max-w-6xl px-6 pb-8">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-sm font-semibold uppercase tracking-[0.18em] text-cyan">
+            Auto grid · &lt;GridPack&gt; fills the box, no gaps
+          </h2>
+          <div className="flex items-center gap-5">
+            <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-[#7fa]">
+              Cols
+              <input type="range" min={2} max={12} value={gridCols} onInput={(e) => setGridCols(Number(e.currentTarget.value))} />
+              <span className="text-cyan tabular-nums">{gridCols}</span>
+            </label>
+            <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-[#7fa]">
+              Hero weight
+              <input type="range" min={1} max={20} value={heroWeight} onInput={(e) => setHeroWeight(Number(e.currentTarget.value))} />
+              <span className="text-amber tabular-nums">{heroWeight}×</span>
+            </label>
+          </div>
+        </div>
+        <div className="h-[380px] w-full resize-y overflow-auto border border-line bg-panel/40 p-1.5">
+          <GridPack cols={gridCols} rows={7} gap={6} className="h-full w-full">
+            <GridItem weight={heroWeight}>
+              <Cell i={0} label={`HERO ${heroWeight}×`} highlight />
+            </GridItem>
+            {Array.from({ length: count - 1 }, (_, k) => (
+              <GridItem key={k} weight={k % 7 === 0 ? 2 : 1}>
+                <Cell i={k + 1} label={k % 7 === 0 ? '2×' : '1×'} />
+              </GridItem>
+            ))}
+          </GridPack>
+        </div>
+        <p className="mt-2 text-[11px] text-[#567]">
+          {count} items, no positions given. One fixed <span className="text-amber">HERO</span> block —
+          drag its weight and watch the rest re-flow around it. Drag the bottom edge to resize:
+          the browser reflows the CSS grid with zero re-pack.
+        </p>
+      </section>
 
       <footer className="relative z-10 px-6 pb-8 text-center text-[10px] uppercase tracking-[0.18em] text-[#567]">
         MIT licensed · zero dependencies · press space to repack

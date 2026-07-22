@@ -16,3 +16,9 @@ export {
   type RectangleSize,
 } from './types';
 export { isContainedIn } from './utils';
+export {
+  packGrid,
+  type GridInput,
+  type GridPlacement,
+  type GridPackOptions,
+} from './grid-pack';
