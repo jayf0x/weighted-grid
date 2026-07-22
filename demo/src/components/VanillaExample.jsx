@@ -2,7 +2,7 @@ import { packGrid } from 'weighted-grid';
 import { tintFor } from '../utils/colors.js';
 
 /**
- * `weighted-grid/react`'s `<GridPack>` is one opinionated way to render `packGrid`'s output — it isn't
+ * `weighted-grid/react`'s `<Grid>` is one opinionated way to render `packGrid`'s output — it isn't
  * required. This renders the same placements with plain absolutely-positioned `<div>`s and no
  * import from `weighted-grid/react`, to make it obvious the package only computes `{ id, x, y, w, h }`
  * fractions; everything visual (color, border, gap, animation) is the caller's own CSS.

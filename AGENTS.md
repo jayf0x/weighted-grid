@@ -12,7 +12,7 @@ it before making structural changes.**
 
 - `src/grid-pack.ts` — the allocator (`packGrid`). The heart of the library: a squarified treemap
   in continuous `[0,1]x[0,1]` space. Output is fractional (`{ id, x, y, w, h }`), not integer cells.
-- `src/react.tsx` — `<GridPack>` / `<GridItem>`, the `@weighted-grid/react` entry. Renders placements as
+- `src/react.tsx` — `<Grid>` / `<GridItem>`, the `@weighted-grid/react` entry. Renders placements as
   absolutely-positioned percentage boxes. React is an **optional** peer dependency.
 - `src/index.ts` — main entry; re-exports `packGrid` and its types. No other engine lives here.
 - `tests/grid-pack.test.ts` — invariant tests (exact fill, no overlap, in-bounds, area fidelity,

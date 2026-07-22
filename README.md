@@ -41,15 +41,17 @@ npm install weighted-grid
 ## Quick start
 
 ```tsx
-import { GridPack, GridItem } from 'weighted-grid/react';
+import { Grid, GridItem } from 'weighted-grid/react';
 
-<GridPack cols={7} fill>
+<Grid cols={7} fill>
   <GridItem weight={4}>hero</GridItem>
   <GridItem>a</GridItem>
   <GridItem>b</GridItem>
   <GridItem>c</GridItem>
-</GridPack>;
+</Grid>;
 ```
+
+> Want Vue/Svelte support? Please open [an issue](https://github.com/jayf0x/weighted-grid/issues/new) 🙂
 
 Or use the placement algorithm directly, framework-free:
 
@@ -64,7 +66,7 @@ const placed = packGrid([
 // → [{ id, x, y, w, h }, ...]  fractions of the unit square (0..1), tiling it exactly
 ```
 
-## `<GridPack>` props
+## `<Grid>` props
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -83,7 +85,7 @@ const placed = packGrid([
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
 | `weight` | `number` | `1` | Relative area — a `2` gets ~twice the space of a `1`. Ignored on any axis pinned by `cols`/`rows`. |
-| `cols` | `number` | — | Pin this item to exactly `cols` grid columns. Giving *any* item a `cols`/`rows` switches the whole `<GridPack>` from the free-fill treemap to native CSS Grid (`grid-auto-flow: dense`). |
+| `cols` | `number` | — | Pin this item to exactly `cols` grid columns. Giving *any* item a `cols`/`rows` switches the whole `<Grid>` from the free-fill treemap to native CSS Grid (`grid-auto-flow: dense`). |
 | `rows` | `number` | — | Pin this item to exactly `rows` grid rows. |
 
 Pinning `cols`/`rows` on one item switches the whole grid to CSS Grid placement; unpinned items keep filling gaps by `weight`. See [`docs/why.md`](./docs/why.md) for why the two modes share one prop surface.

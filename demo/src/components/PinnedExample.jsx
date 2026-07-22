@@ -1,4 +1,4 @@
-import { GridItem, GridPack } from 'weighted-grid/react';
+import { GridItem, Grid } from 'weighted-grid/react';
 import { tintFor } from '../utils/colors.js';
 
 const Cell = ({ i, label }) => (
@@ -10,7 +10,7 @@ const Cell = ({ i, label }) => (
   </div>
 );
 
-/** Pinning `cols`/`rows` on a `GridItem` switches that whole `<GridPack>` to native CSS Grid
+/** Pinning `cols`/`rows` on a `GridItem` switches that whole `<Grid>` to native CSS Grid
  * (`grid-auto-flow: dense`) instead of the free-fill treemap — pinned items get an exact span,
  * auto (`weight`-only) items fill the gaps around them. */
 export function PinnedExample() {
@@ -18,7 +18,7 @@ export function PinnedExample() {
     <section className="flex flex-col gap-3">
       <h2 className="text-[13px] font-medium uppercase tracking-[0.08em] text-ink/45">pinned spans — exact cols/rows, mixed with auto</h2>
       <div className="h-[220px] w-full overflow-auto rounded-lg border border-line bg-panel p-1.5">
-        <GridPack cols={6} gap={6} className="h-full w-full">
+        <Grid cols={6} gap={6} className="h-full w-full">
           <GridItem cols={3} rows={2}>
             <Cell i={0} label="cols=3 rows=2" />
           </GridItem>
@@ -30,7 +30,7 @@ export function PinnedExample() {
               <Cell i={i + 2} />
             </GridItem>
           ))}
-        </GridPack>
+        </Grid>
       </div>
       <p className="text-[13px] leading-relaxed text-ink/40">
         The first two blocks pin their own size (<code className="font-mono text-ink/70">cols</code>/<code className="font-mono text-ink/70">rows</code>{' '}
