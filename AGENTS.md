@@ -5,8 +5,8 @@ Working notes for agents/contributors on `weighted-grid`.
 ## What this is
 
 A zero-dependency TypeScript library + `@weighted-grid/react` component that lays out a weighted,
-content-agnostic grid filling its container. See `docs/why.md` for the product rationale and
-`handover.md` for the current roadmap. **Read both before making structural changes.**
+content-agnostic grid filling its container. See `docs/why.md` for the product rationale. **Read
+it before making structural changes.**
 
 ## Layout
 
