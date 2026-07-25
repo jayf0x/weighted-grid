@@ -4,6 +4,11 @@
   --font-display: "Fraunces", serif;
   --font-sans: "IBM Plex Sans", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* shared example colors: fill = filler/void tiles, item = real content */
+  --color-fill: #ff443399;
+  --color-void: #33ff3399;
+  --color-item: #3355ee99;
 }
 
 :root {

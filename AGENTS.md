@@ -15,14 +15,17 @@ and the API is deliberately small:
 
 ```tsx
 <Grid nrCols={8} rowHeight={isMobile ? 50 : 100}>
-  <GridItem weight={2}>…</GridItem>       {/* elastic: weight sizes both axes */}
-  <GridItem cols={3}>…</GridItem>          {/* pin one axis, weight fills the other */}
-  <GridItem cols={2} rows={2}>…</GridItem> {/* strict: never stretches */}
+  <GridItem weight={2}>…</GridItem> {/* elastic: weight sizes both axes */}
+  <GridItem cols={3}>…</GridItem> {/* pin one axis, weight fills the other */}
+  <GridItem cols={2} rows={2}>
+    …
+  </GridItem>{" "}
+  {/* strict: never stretches */}
 </Grid>
 ```
 
 `<Grid>`'s own dimension props are `nrCols`/`nrRows`, not `cols`/`rows` — deliberately different from
-`<GridItem>`'s `cols`/`rows` (a per-item *span*, not a grid-wide count). Same short name meaning two
+`<GridItem>`'s `cols`/`rows` (a per-item _span_, not a grid-wide count). Same short name meaning two
 different things in the same JSX block was a real, reported point of confusion; keep them distinct.
 
 - **Sizing** — `weight` is flexbox-`flex`-style ("how much of the grid do I get"). Pin an axis with
@@ -95,7 +98,7 @@ scripts/link-local.sh        # build + copy dist/ into ../jayf0x.github.io/node_
 (`placeSpans`) — no browser needed since the grid owns explicit placement, so this model equals
 what the DOM renders. `analyzeDevGrid`/`formatDevReport` report on the live `dev/src/App.jsx` config
 (holes, which ones `stretch` could've closed instead of ending up in a `fillComponent` tile, and the
-actual merged `fillComponent` tiles the grid would render); `devItems()` is a *verbatim* copy of
+actual merged `fillComponent` tiles the grid would render); `devItems()` is a _verbatim_ copy of
 `dev/src/App.jsx`'s `CARDS` — keep them in sync when the dev app changes, or the report stops meaning
 anything. `analyzeSpans`/`analyzeItems`/`showcaseItems` (behind `--showcase`) are the older
 Showcase-specific report. Also importable for `tests/dev-report-grid.test.ts`.
@@ -103,7 +106,7 @@ Showcase-specific report. Also importable for `tests/dev-report-grid.test.ts`.
 ## Conventions
 
 - **Zero runtime dependencies** in the published package — keep it that way (react is a peer dep).
-- Sizing is by relative **`weight`** only. No fixed-pixel *item* sizes — a resizable grid doesn't need
+- Sizing is by relative **`weight`** only. No fixed-pixel _item_ sizes — a resizable grid doesn't need
   them (`rowHeight` is the one per-row escape hatch).
 - Rendering is **native CSS Grid**; the JS only computes placement. Don't reimplement layout the
   browser already does.
@@ -118,3 +121,13 @@ Showcase-specific report. Also importable for `tests/dev-report-grid.test.ts`.
 `.idea/d3-hierarchy/` is a vendored clone of d3-hierarchy — it was the source of the (now removed)
 squarified treemap allocator. **No longer referenced by any shipping code**; safe to delete if the
 old modes aren't being restored from git.
+
+# dev/src/cases
+
+Each file here is one standalone test case: a self-contained component using `Grid`/`GridItem`
+from `weighted-grid/react`, wrapped in its own `<section>`. Use `bg-item` for real content and
+`bg-fill` for filler/void tiles — same theme colors (defined in `dev/src/style.css`) everywhere so
+examples stay visually comparable.
+
+To add a case: create `MyCase.jsx` exporting a named component, then import + list it in
+`dev/src/App.jsx`'s `EXAMPLES` array. No shared state, no controls, no props — just render.
