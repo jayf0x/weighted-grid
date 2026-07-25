@@ -1,5 +1,9 @@
 import { Grid, GridItem } from "weighted-grid/react";
 
+export const FillComponent = () => (
+  <div className="bg-fill w-full h-full" id="filler" />
+);
+
 export const Void = (...args) => (
   <GridItem {...args}>
     <div className="bg-void w-full h-full" id="void" />
@@ -17,4 +21,13 @@ export const Item = (index, ...args) => (
       </span>
     </div>
   </GridItem>
+);
+
+export const Title = (args = {}) => (
+  <h2>
+    Title:{" "}
+    {Object.entries(args)
+      .map(([k, v]) => k + ": " + v)
+      .join(", ")}
+  </h2>
 );
