@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { Grid, GridItem } from "weighted-grid/react";
+import { Grid, GridItem } from 'weighted-grid/react';
 
 const CARDS = [
   { weight: 1 },
@@ -28,16 +27,14 @@ const CARDS = [
 ];
 
 export const App = () => {
-  const nrCols = 4;
-
   return (
     <section className="mx-auto w-[900px] h-[600px] m-5">
       <p id="global_stats">
         <p>nrCards: {CARDS.length}</p>
       </p>
       <Grid
-        cols={10}
-        // rows={160}
+        nrCols={10}
+        // nrRows={160}
         showGrid
         stretch={4}
         fillComponent={
@@ -52,10 +49,10 @@ export const App = () => {
           <GridItem key={i} {...args}>
             <div className="bg-[#35e9] w-full h-full text-[0.6rem]" id="item">
               <span id="index">{i}) </span>
-              <span id="index" id="args">
+              <span id="args">
                 {Object.entries(args)
-                  .map(([k, v]) => k.slice(0, 1) + ": " + v)
-                  .join(", ")}
+                  .map(([k, v]) => k.slice(0, 1) + ': ' + v)
+                  .join(', ')}
               </span>
             </div>
           </GridItem>

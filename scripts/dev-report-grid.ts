@@ -14,8 +14,17 @@
  * Import: `analyzeDevGrid`/`formatDevReport` for the dev report, `analyzeSpans`/`formatReport` for
  * unit tests (see tests/dev-report-grid.test.ts).
  */
-import { placeSpans, spanFor, fillDeadZones, elasticityOf, groupEmptyRects, type Placement, type Span } from '../src/utils';
+
 import type { GridItemProps } from '../src/react';
+import {
+  elasticityOf,
+  fillDeadZones,
+  groupEmptyRects,
+  type Placement,
+  placeSpans,
+  type Span,
+  spanFor,
+} from '../src/utils';
 
 export type DeadZoneReport = {
   cols: number;
@@ -77,7 +86,11 @@ const occupancyOf = (placements: Placement[], cols: number, rows: number): boole
 
 /** Convenience: analyze a list of `<GridItem>`-style props (uses the real `spanFor`). */
 export const analyzeItems = (items: GridItemProps[], cols: number, isPacked = false): DeadZoneReport =>
-  analyzeSpans(items.map((p) => spanFor(p, cols)), cols, isPacked);
+  analyzeSpans(
+    items.map((p) => spanFor(p, cols)),
+    cols,
+    isPacked,
+  );
 
 /** Analyze the same items *after* the order-mode dead-zone fill — what `<Grid mode="order">` renders.
  * `maxStretch` matches the `stretch` prop (extra cells per axis an elastic item may grow). */
@@ -86,7 +99,11 @@ export const analyzeItemsFilled = (
   cols: number,
   maxStretch = Number.POSITIVE_INFINITY,
 ): DeadZoneReport => {
-  const { placements, rows } = placeSpans(items.map((p) => spanFor(p, cols)), cols, false);
+  const { placements, rows } = placeSpans(
+    items.map((p) => spanFor(p, cols)),
+    cols,
+    false,
+  );
   const filled = fillDeadZones(placements, items.map(elasticityOf), cols, rows, maxStretch);
   return reportFromOccupancy(occupancyOf(filled, cols, rows), cols, rows);
 };
@@ -186,9 +203,9 @@ export type DevGridReport = {
  */
 export const analyzeDevGrid = (
   items: GridItemProps[] = devItems(),
-  cols = 8,
+  cols = 10, // matches dev/src/App.jsx's nrCols
   maxStretch = 4,
-  minRows = cols, // dev/src/App.jsx passes `rows={nrCols}` — same value as `cols`
+  minRows = 0, // dev/src/App.jsx leaves nrRows unset (auto) — 0 is a no-op floor
 ): DevGridReport => {
   const spans = items.map((p) => spanFor(p, cols));
   const { placements, rows: contentRows } = placeSpans(spans, cols, false);
@@ -240,7 +257,9 @@ export const formatDevReport = (report: DevGridReport, title = 'dev/App.jsx grid
   ];
   if (missed.length) lines.push(`  missed-stretch at (row,col): ${missed.map((h) => `(${h.row},${h.col})`).join(' ')}`);
   if (fillerTiles.length) {
-    lines.push(`fillComponent renders ${fillerTiles.length} tile${fillerTiles.length === 1 ? '' : 's'} (merged, not one per cell):`);
+    lines.push(
+      `fillComponent renders ${fillerTiles.length} tile${fillerTiles.length === 1 ? '' : 's'} (merged, not one per cell):`,
+    );
     for (const f of fillerTiles) lines.push(`  row ${f.row}, col ${f.col} — ${f.colSpan}×${f.rowSpan}`);
   }
   return lines.join('\n');
@@ -259,7 +278,7 @@ if (import.meta.main) {
     }
   } else {
     const stretchArg = process.argv.find((a) => a.startsWith('--stretch='));
-    const cols = colsArg ? Number(colsArg.split('=')[1]) : 8; // matches dev/src/App.jsx's nrCols
+    const cols = colsArg ? Number(colsArg.split('=')[1]) : 10; // matches dev/src/App.jsx's nrCols
     const maxStretch = stretchArg ? Number(stretchArg.split('=')[1]) : 4; // matches dev/src/App.jsx's stretch prop
     console.log(formatDevReport(analyzeDevGrid(devItems(), cols, maxStretch)));
   }

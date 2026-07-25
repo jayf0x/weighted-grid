@@ -32,11 +32,11 @@ const clamp = (n: number, max: number): number => Math.max(1, Math.min(max, Math
  * per-axis for organic shapes (`cols={4}` on a weight-2 item → 4 wide, 2 tall). Absent everywhere,
  * an item is 1×1. `colSpan` is clamped to the grid's column count so it can never overflow the row.
  */
-export const spanFor = (props: GridItemProps, cols: number): { colSpan: number; rowSpan: number } => {
+export const spanFor = (props: GridItemProps, nrCols: number): { colSpan: number; rowSpan: number } => {
   const weight = typeof props.weight === 'number' && props.weight > 0 ? props.weight : 1;
 
   return {
-    colSpan: clamp(props.cols ?? weight, cols),
+    colSpan: clamp(props.cols ?? weight, nrCols),
     rowSpan: Math.max(1, Math.round(props.rows ?? weight)),
   };
 };
@@ -62,10 +62,10 @@ export type Placed = {
  * (`isPacked=true`, first-fit from the top). This is the single source of truth for placement —
  * `packedRowCount` and the dead-zone analyzer both build on it.
  */
-export const placeSpans = (spans: Span[], cols: number, isPacked: boolean): Placed => {
+export const placeSpans = (spans: Span[], nrCols: number, isPacked: boolean): Placed => {
   const occupancy: boolean[][] = [];
   const row = (r: number): boolean[] => {
-    while (occupancy.length <= r) occupancy.push(new Array(cols).fill(false));
+    while (occupancy.length <= r) occupancy.push(new Array(nrCols).fill(false));
     return occupancy[r];
   };
   const fits = (r: number, c: number, cs: number, rs: number): boolean => {
@@ -79,14 +79,14 @@ export const placeSpans = (spans: Span[], cols: number, isPacked: boolean): Plac
   let maxRow = 0;
 
   for (const { colSpan, rowSpan } of spans) {
-    const cs = Math.min(colSpan, cols);
+    const cs = Math.min(colSpan, nrCols);
     const rs = rowSpan;
     let r = isPacked ? 0 : cursorR;
     let c = isPacked ? 0 : cursorC;
 
-    while (c > cols - cs || !fits(r, c, cs, rs)) {
+    while (c > nrCols - cs || !fits(r, c, cs, rs)) {
       c++;
-      if (c > cols - cs) {
+      if (c > nrCols - cs) {
         r++;
         c = 0;
       }
@@ -104,9 +104,9 @@ export const placeSpans = (spans: Span[], cols: number, isPacked: boolean): Plac
   return { placements, rows: Math.max(1, maxRow), occupancy };
 };
 
-/** Rows the given spans occupy in a `cols`-wide grid (>= 1). Thin wrapper over {@link placeSpans}. */
-export const packedRowCount = (spans: Span[], cols: number, isPacked: boolean): number =>
-  placeSpans(spans, cols, isPacked).rows;
+/** Rows the given spans occupy in a `nrCols`-wide grid (>= 1). Thin wrapper over {@link placeSpans}. */
+export const packedRowCount = (spans: Span[], nrCols: number, isPacked: boolean): number =>
+  placeSpans(spans, nrCols, isPacked).rows;
 
 /** Per-axis elasticity: an axis may grow to absorb dead cells only when *that* axis came from
  * `weight`, not an explicit pin. `cols={2}` pins the column axis (never grows horizontally) but
@@ -131,13 +131,13 @@ export const elasticityOf = (props: GridItemProps): Elasticity => ({
 export const fillDeadZones = (
   placements: Placement[],
   elastic: Elasticity[],
-  cols: number,
-  rows: number,
+  nrCols: number,
+  nrRows: number,
   maxStretch = Number.POSITIVE_INFINITY,
 ): Placement[] => {
   const out = placements.map((p) => ({ ...p }));
   const orig = placements.map((p) => ({ colSpan: p.colSpan, rowSpan: p.rowSpan }));
-  const occ: boolean[][] = Array.from({ length: rows }, () => new Array<boolean>(cols).fill(false));
+  const occ: boolean[][] = Array.from({ length: nrRows }, () => new Array<boolean>(nrCols).fill(false));
   const set = (r: number, c: number) => {
     if (occ[r]) occ[r][c] = true;
   };
@@ -147,12 +147,12 @@ export const fillDeadZones = (
 
   // A column/row edge is growable for `p` only if in-bounds and free across the whole edge.
   const colFree = (p: Placement, c: number): boolean => {
-    if (c < 0 || c >= cols) return false;
+    if (c < 0 || c >= nrCols) return false;
     for (let r = p.rowStart; r < p.rowStart + p.rowSpan; r++) if (!occ[r] || occ[r][c]) return false;
     return true;
   };
   const rowFree = (p: Placement, r: number): boolean => {
-    if (r < 0 || r >= rows || !occ[r]) return false;
+    if (r < 0 || r >= nrRows || !occ[r]) return false;
     for (let c = p.colStart; c < p.colStart + p.colSpan; c++) if (occ[r][c]) return false;
     return true;
   };
@@ -197,19 +197,19 @@ export const fillDeadZones = (
  * as that full width stays empty. Not the minimal rectangle count, but deterministic and always
  * gap-free/overlap-free — good enough for a filler tile, which has no identity to preserve.
  */
-export const groupEmptyRects = (occupied: boolean[][], cols: number, rows: number): Placement[] => {
-  const covered: boolean[][] = Array.from({ length: rows }, () => new Array(cols).fill(false));
+export const groupEmptyRects = (occupied: boolean[][], nrCols: number, nrRows: number): Placement[] => {
+  const covered: boolean[][] = Array.from({ length: nrRows }, () => new Array(nrCols).fill(false));
   const rects: Placement[] = [];
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
+  for (let r = 0; r < nrRows; r++) {
+    for (let c = 0; c < nrCols; c++) {
       if (occupied[r]?.[c] || covered[r][c]) continue;
 
       let w = 1;
-      while (c + w < cols && !occupied[r]?.[c + w] && !covered[r][c + w]) w++;
+      while (c + w < nrCols && !occupied[r]?.[c + w] && !covered[r][c + w]) w++;
 
       let h = 1;
-      grow: while (r + h < rows) {
+      grow: while (r + h < nrRows) {
         for (let cc = c; cc < c + w; cc++) if (occupied[r + h]?.[cc] || covered[r + h][cc]) break grow;
         h++;
       }

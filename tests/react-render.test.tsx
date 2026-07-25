@@ -8,13 +8,12 @@ import { Grid, GridItem } from '../src/react';
 // `asGridItems` looks one level deep for a real GridItem before giving up.
 const Wrapper = ({ children }: { children?: React.ReactNode }) => <>{children}</>;
 
-const colSpans = (html: string) =>
-  [...html.matchAll(/grid-column:\d+ \/ span (\d+)/g)].map((m) => Number(m[1]));
+const colSpans = (html: string) => [...html.matchAll(/grid-column:\d+ \/ span (\d+)/g)].map((m) => Number(m[1]));
 
 describe('Grid (SSR render)', () => {
   test('finds a GridItem wrapped one level deep, emits explicit line-based placement', () => {
     const html = renderToStaticMarkup(
-      <Grid cols={12} stretch={0} rowHeight={20} gap={3}>
+      <Grid nrCols={12} stretch={0} rowHeight={20} gap={3}>
         <Wrapper>
           <GridItem weight={4}>wrapped</GridItem>
         </Wrapper>
@@ -44,9 +43,11 @@ describe('Grid (SSR render)', () => {
 
   test('weight sizes both axes; cols/rows override per-axis', () => {
     const html = renderToStaticMarkup(
-      <Grid cols={12} stretch={0}>
+      <Grid nrCols={12} stretch={0}>
         <GridItem weight={2}>square</GridItem>
-        <GridItem cols={4} rows={2}>wide</GridItem>
+        <GridItem cols={4} rows={2}>
+          wide
+        </GridItem>
       </Grid>,
     );
 
@@ -56,7 +57,7 @@ describe('Grid (SSR render)', () => {
 
   test('stretch={0} leaves raw source-order spans (no growth)', () => {
     const html = renderToStaticMarkup(
-      <Grid cols={12} stretch={0}>
+      <Grid nrCols={12} stretch={0}>
         <GridItem weight={2}>a</GridItem>
         <GridItem weight={2}>b</GridItem>
       </Grid>,
@@ -67,7 +68,7 @@ describe('Grid (SSR render)', () => {
   test('stretch (default ∞) grows weight-only items into the dead columns', () => {
     // Two 2-wide elastic items in 12 cols: raw leaves 8 trailing dead cells; stretch fills the row.
     const html = renderToStaticMarkup(
-      <Grid cols={12}>
+      <Grid nrCols={12}>
         <GridItem weight={2}>a</GridItem>
         <GridItem weight={2}>b</GridItem>
       </Grid>,
@@ -78,8 +79,10 @@ describe('Grid (SSR render)', () => {
 
   test('strict items (explicit cols/rows) never stretch; only weight items fill', () => {
     const html = renderToStaticMarkup(
-      <Grid cols={12}>
-        <GridItem cols={2} rows={1}>fixed</GridItem>
+      <Grid nrCols={12}>
+        <GridItem cols={2} rows={1}>
+          fixed
+        </GridItem>
         <GridItem weight={1}>elastic</GridItem>
       </Grid>,
     );
@@ -90,7 +93,7 @@ describe('Grid (SSR render)', () => {
 
   test('fillComponent plugs only what stretch (default ∞) leaves — nothing, when one item can fill it all', () => {
     const html = renderToStaticMarkup(
-      <Grid cols={4} rows={2} fillComponent={<i>VOID</i>}>
+      <Grid nrCols={4} nrRows={2} fillComponent={<i>VOID</i>}>
         <GridItem weight={1}>a</GridItem>
       </Grid>,
     );
@@ -103,7 +106,7 @@ describe('Grid (SSR render)', () => {
 
   test('fillComponent plugs exactly what a capped stretch could not reach, as one unified block', () => {
     const html = renderToStaticMarkup(
-      <Grid cols={4} rows={2} stretch={1} fillComponent={<i>VOID</i>}>
+      <Grid nrCols={4} nrRows={2} stretch={1} fillComponent={<i>VOID</i>}>
         <GridItem weight={1}>a</GridItem>
       </Grid>,
     );
@@ -117,12 +120,12 @@ describe('Grid (SSR render)', () => {
 
   test('rows always draws row tracks — rowHeight="auto" splits, fixed rowHeight reserves', () => {
     const auto = renderToStaticMarkup(
-      <Grid cols={4} rows={3}>
+      <Grid nrCols={4} nrRows={3}>
         <GridItem weight={1}>a</GridItem>
       </Grid>,
     );
     const fixed = renderToStaticMarkup(
-      <Grid cols={4} rows={3} rowHeight={40}>
+      <Grid nrCols={4} nrRows={3} rowHeight={40}>
         <GridItem weight={1}>a</GridItem>
       </Grid>,
     );
@@ -137,7 +140,7 @@ describe('Grid (SSR render)', () => {
     // Regression: rowCount used to be clamped to the declared `rows`, so occupancy tracking for
     // anything past it silently went blind — nothing past row 1 could ever stretch.
     const html = renderToStaticMarkup(
-      <Grid cols={2} rows={1}>
+      <Grid nrCols={2} nrRows={1}>
         <GridItem weight={1}>a</GridItem>
         <GridItem weight={1}>b</GridItem>
         <GridItem weight={1}>c</GridItem>
@@ -152,8 +155,9 @@ describe('Grid (SSR render)', () => {
   test('omitting rows auto-fills height: exactly the occupied rows stretch (1fr)', () => {
     // 14 one-cell items in 12 columns occupy 2 rows — both stretch to fill, no guessed count.
     const html = renderToStaticMarkup(
-      <Grid cols={12} stretch={0}>
+      <Grid nrCols={12} stretch={0}>
         {Array.from({ length: 14 }, (_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: static fixture, order never changes
           <GridItem key={i} weight={1}>
             {`i${i}`}
           </GridItem>
@@ -165,21 +169,26 @@ describe('Grid (SSR render)', () => {
     expect(html).toContain('height:100%');
   });
 
-  test('showGrid draws both column and row guide lines', () => {
-    const html = renderToStaticMarkup(
-      <Grid cols={6} rows={4} showGrid>
+  test('showGrid tints the container so the real gap gutter reads as guide lines', () => {
+    const on = renderToStaticMarkup(
+      <Grid nrCols={6} nrRows={4} showGrid>
+        <GridItem weight={1}>a</GridItem>
+      </Grid>,
+    );
+    const off = renderToStaticMarkup(
+      <Grid nrCols={6} nrRows={4}>
         <GridItem weight={1}>a</GridItem>
       </Grid>,
     );
 
-    expect(html).toContain('background-size:calc(100% / 6) calc(100% / 4)');
-    expect((html.match(/linear-gradient/g) ?? []).length).toBe(2);
+    expect(on).toContain('background:rgba(128,128,128,.4)');
+    expect(off).not.toContain('background:');
   });
 
   // Regression: an explicitly-passed `undefined` prop must fall back to its default, not clobber it.
   test('an explicitly-undefined prop falls back to its default instead of breaking the CSS', () => {
     const html = renderToStaticMarkup(
-      <Grid cols={5} gap={undefined} rowHeight={undefined}>
+      <Grid nrCols={5} gap={undefined} rowHeight={undefined}>
         <GridItem weight={1}>a</GridItem>
         <GridItem weight={2}>b</GridItem>
       </Grid>,
@@ -187,5 +196,90 @@ describe('Grid (SSR render)', () => {
 
     expect(html).not.toContain('undefined');
     expect(html).toContain('gap:8px');
+  });
+
+  test('animateSize/animatePosition render cleanly under SSR — no useLayoutEffect warning', () => {
+    // useLayoutEffect is a no-op during SSR; the isomorphic fallback in src/react.tsx must keep
+    // React from printing its "does nothing on the server" warning regardless of these props.
+    const errors: unknown[] = [];
+    const spy = console.error;
+    console.error = (...args: unknown[]) => errors.push(args);
+    try {
+      renderToStaticMarkup(
+        <Grid nrCols={4} animateSize animatePosition>
+          <GridItem weight={1}>a</GridItem>
+          <GridItem weight={2}>b</GridItem>
+        </Grid>,
+      );
+    } finally {
+      console.error = spy;
+    }
+    expect(errors).toEqual([]);
+  });
+
+  test('gridcell wrappers never carry a stray inline transform on first render', () => {
+    const html = renderToStaticMarkup(
+      <Grid nrCols={4} animateSize animatePosition>
+        <GridItem weight={1}>a</GridItem>
+      </Grid>,
+    );
+    expect(html).not.toContain('transform');
+  });
+
+  describe('invariants hold across a matrix of grid setups', () => {
+    // Placement must stay gap-free-aware (nothing overlaps), and every item keeps its source-order
+    // index regardless of how cols/stretch/mix are combined. Covers weight-only, mixed strict/elastic,
+    // and fully-strict item sets, each at a few column counts and stretch caps.
+    const weightOnly = Array.from({ length: 9 }, (_, i) => ({ weight: (i % 4) + 1 }));
+    const mixed = [{ weight: 2 }, { cols: 2 }, { rows: 2 }, { weight: 1 }, { cols: 2, rows: 2 }, { weight: 3 }];
+    const fullyStrict = Array.from({ length: 5 }, (_, i) => ({ cols: (i % 3) + 1, rows: (i % 2) + 1 }));
+
+    const setups: { name: string; items: { weight?: number; cols?: number; rows?: number }[] }[] = [
+      { name: 'weight-only', items: weightOnly },
+      { name: 'mixed strict/elastic', items: mixed },
+      { name: 'fully strict', items: fullyStrict },
+    ];
+
+    for (const { name, items } of setups) {
+      for (const nrCols of [3, 5, 8]) {
+        for (const stretch of [0, 2, Number.POSITIVE_INFINITY]) {
+          test(`${name}, nrCols=${nrCols}, stretch=${stretch}`, () => {
+            const html = renderToStaticMarkup(
+              <Grid nrCols={nrCols} stretch={stretch}>
+                {items.map((props, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: static fixture, order never changes
+                  <GridItem key={i} {...props}>
+                    {`item-${i}`}
+                  </GridItem>
+                ))}
+              </Grid>,
+            );
+
+            // Every item rendered exactly once, in source order.
+            const order = [...html.matchAll(/item-(\d+)/g)].map((m) => Number(m[1]));
+            expect(order).toEqual(items.map((_, i) => i));
+
+            // No cell double-covered: parse each item's placement and check for overlaps.
+            const cells = [...html.matchAll(/grid-column:(\d+) \/ span (\d+);grid-row:(\d+) \/ span (\d+)/g)].map(
+              ([, c, cs, r, rs]) => ({ c: Number(c), cs: Number(cs), r: Number(r), rs: Number(rs) }),
+            );
+            expect(cells.length).toBe(items.length);
+            const occupied = new Set<string>();
+            for (const { c, cs, r, rs } of cells) {
+              for (let cc = c; cc < c + cs; cc++) {
+                for (let rr = r; rr < r + rs; rr++) {
+                  const key = `${cc},${rr}`;
+                  expect(occupied.has(key)).toBe(false);
+                  occupied.add(key);
+                }
+              }
+            }
+
+            // Nothing ever exceeds the declared column count.
+            for (const { c, cs } of cells) expect(c + cs - 1).toBeLessThanOrEqual(nrCols);
+          });
+        }
+      }
+    }
   });
 });

@@ -15,7 +15,9 @@ export function VanillaExample({ blocks, cols }) {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-[13px] font-medium uppercase tracking-[0.08em] text-ink/45">bare-bones — layoutGrid only, no React wrapper</h2>
+      <h2 className="text-[13px] font-medium uppercase tracking-[0.08em] text-ink/45">
+        bare-bones — layoutGrid only, no React wrapper
+      </h2>
       <div className="relative h-[380px] w-full overflow-auto rounded-lg border border-line bg-panel p-1.5">
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
           {placements.map((p) => (
@@ -42,8 +44,9 @@ export function VanillaExample({ blocks, cols }) {
         </div>
       </div>
       <p className="text-[13px] leading-relaxed text-ink/40">
-        Same <code className="font-mono text-ink/70">blocks</code>/<code className="font-mono text-ink/70">cols</code> as above, placed with{' '}
-        <code className="font-mono text-ink/70">layoutGrid()</code> directly and rendered by hand — the library never touches the DOM.
+        Same <code className="font-mono text-ink/70">blocks</code>/<code className="font-mono text-ink/70">cols</code>{' '}
+        as above, placed with <code className="font-mono text-ink/70">layoutGrid()</code> directly and rendered by hand
+        — the library never touches the DOM.
       </p>
     </section>
   );

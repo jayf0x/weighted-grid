@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Header } from './components/Header.jsx';
 import { Controls } from './components/Controls.jsx';
 import { DemoPanel } from './components/DemoPanel.jsx';
+import { Header } from './components/Header.jsx';
 import { PinnedExample } from './components/PinnedExample.jsx';
 import { VanillaExample } from './components/VanillaExample.jsx';
 import { buildBlocks } from './utils/blocks.js';
@@ -19,7 +19,14 @@ export function App() {
       <Header />
 
       <main className="mx-auto flex max-w-5xl flex-col gap-6 px-8 pb-16">
-        <Controls count={count} setCount={setCount} cols={cols} setCols={setCols} weights={weights} setWeight={setWeight} />
+        <Controls
+          count={count}
+          setCount={setCount}
+          cols={cols}
+          setCols={setCols}
+          weights={weights}
+          setWeight={setWeight}
+        />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <DemoPanel

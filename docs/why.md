@@ -2,10 +2,10 @@
 
 ## The one-line pitch
 
-**A content-agnostic React grid that fills its container by *weight*, with a single prop to
-toggle between "stretch to fill" and "fixed columns".** You drop in arbitrary children, optionally
-tag a few with a `weight`, and the layout resolves itself — no coordinates, no image assumptions,
-no manual math, zero dependencies.
+**A content-agnostic React grid that fills its container by *weight*, on native CSS Grid.** You
+drop in arbitrary children, optionally tag a few with a `weight` (or pin an exact `cols`/`rows`
+span), and the layout resolves itself — no coordinates, no image assumptions, no manual math,
+zero dependencies.
 
 ## The honest landscape
 
@@ -22,22 +22,25 @@ that idea for general React UI:
 | native CSS Grid `repeat(n, 1fr)` | The "fixed columns" flow | It *is* one line of CSS — we lean on it, we don't replace it |
 
 **The gap we fill:** the small, boring, content-agnostic React layer that turns "here are some
-boxes, some matter more" into a filled, responsive grid — and unifies the layout flows people
-actually want behind two plain props, `mode` and `height`.
+boxes, some matter more" into a filled, responsive grid — one engine, not a mode switch.
 
-## The two flows, one placement
+## One engine, one gap strategy
 
-The span-grid modes (`mode="pack"`/`"order"`) use the **same** weight-driven span assignment. Only
-the row sizing differs, and it's the `height` prop, not the engine:
+There's a single CSS-Grid span model — `weight` sizes items, `cols`/`rows` pin an axis, `stretch`
+grows elastic axes into empty space, and `fillComponent` plugs whatever's left. Whether the grid
+"stretches to fill" or "keeps fixed rows and flows downward" is the `rowHeight` prop, not a
+different engine:
 
-- `height="fill"` (default): rows split the container height, so the grid **stretches to fill it
-  exactly**. Resizing the container is free; the browser reflows, no JS re-pack.
-- `height={number}`: rows are a fixed pixel height, so the grid **keeps its columns and flows
+- `rowHeight="auto"` (default): rows split the container height, so the grid **stretches to fill
+  it exactly**. Resizing the container is free; the browser reflows, no JS re-pack.
+- `rowHeight={number}`: rows are a fixed pixel height, so the grid **keeps its columns and flows
   downward** (the container grows / scrolls) — the familiar CSS-grid look.
 
 This is the crux of the product: the difference between "masonry-ish filled dashboard" and "plain
-column grid" should be one prop, not two libraries. `mode="treemap"` is the separate opt-in for
-exact gap-free weighted-area fill (`weight` as area), where `height` behaves the same way.
+column grid" should be one prop, not two libraries — and exact `cols`/`rows` pins coexist with
+weight-driven fill in the same pass, not a separate treemap mode. See
+[`AGENTS.md`](../AGENTS.md#history--restoring-the-old-modes) for why the earlier squarified-treemap
+allocator was dropped in favor of this.
 
 ## Non-goals
 

@@ -14,12 +14,16 @@ One component, `<Grid>`, with `<GridItem>` children. There is **one engine** (a 
 and the API is deliberately small:
 
 ```tsx
-<Grid cols={8} rows={4} rowHeight={isMobile ? 50 : 100}>
+<Grid nrCols={8} rowHeight={isMobile ? 50 : 100}>
   <GridItem weight={2}>…</GridItem>       {/* elastic: weight sizes both axes */}
   <GridItem cols={3}>…</GridItem>          {/* pin one axis, weight fills the other */}
   <GridItem cols={2} rows={2}>…</GridItem> {/* strict: never stretches */}
 </Grid>
 ```
+
+`<Grid>`'s own dimension props are `nrCols`/`nrRows`, not `cols`/`rows` — deliberately different from
+`<GridItem>`'s `cols`/`rows` (a per-item *span*, not a grid-wide count). Same short name meaning two
+different things in the same JSX block was a real, reported point of confusion; keep them distinct.
 
 - **Sizing** — `weight` is flexbox-`flex`-style ("how much of the grid do I get"). Pin an axis with
   `cols`/`rows` and `weight` fills the other; pin neither and it drives both. Elasticity is **per
@@ -32,13 +36,19 @@ and the API is deliberately small:
   — stays a hole. Adjacent holes merge into unified rectangular blocks (`groupEmptyRects`); pass
   **`fillComponent`** to render one node per block instead of one per cell. Omit it and those cells
   just stay empty.
-- **`rows`** — a floor, not a cap. Content that needs more rows than declared always gets them (same
+- **`nrRows`** — a floor, not a cap. Content that needs more rows than declared always gets them (same
   as CSS Grid's own implicit-row overflow); setting it larger than content only reserves headroom for
   `stretch`. Never let a `rowCount` used for occupancy tracking be smaller than what placement actually
-  needs — that's what silently broke `stretch`/`fillComponent` for any row past a too-small `rows` in
-  the past (see the `rows` prop test in `react-render.test.tsx`).
-- **`rowHeight`** — `"auto"` (default, split the parent height into `rows` bands) or a px/string value
-  (fixed per-row height, grid grows downward). `showGrid` toggles a debug overlay.
+  needs — that's what silently broke `stretch`/`fillComponent` for any row past a too-small `nrRows` in
+  the past (see the `nrRows` prop test in `react-render.test.tsx`). Omit it; most grids never need it.
+- **`rowHeight`** — `"auto"` (default, split the parent height into row bands) or a px/string value
+  (fixed per-row height, grid grows downward).
+- **`showGrid`** — tints the real `gap` gutter instead of drawing a simulated overlay, so guide lines
+  can never drift out of sync with where items actually sit.
+- **`animateSize`/`animatePosition`** — opt-in FLIP transforms (`useFlip` in `src/react.tsx`) for
+  smooth size/position transitions on re-layout. CSS Grid line/span values aren't natively
+  interpolable, so this measures each item's box pre/post-render and plays the delta back as a
+  `transform` that eases to identity — not a real grid-track animation. Off by default.
 
 Strict source order is always preserved; placement is deterministic.
 
@@ -63,8 +73,8 @@ allocator (`src/core.ts`, `layoutGrid`). Those were removed in favour of the sin
 
 - **Full old API preserved at tag `pre-simplify-1.2.0`** (commit `f28f318`) — check it out to restore
   `mode`, `treemap`, `layoutGrid`, `src/core.ts`/`src/types.ts`, and `tests/core.test.ts` verbatim.
-- **The rewrite/deletion landed in commit `__DELETION_COMMIT__`** (this branch) — its diff is the
-  minimal "how to re-add modes later" reference.
+- **The rewrite/deletion landed in commit `62448ea`** ("iteration-4") — its diff is the minimal "how
+  to re-add modes later" reference.
 
 ## Commands
 
