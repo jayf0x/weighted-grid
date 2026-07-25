@@ -88,17 +88,30 @@ describe('Grid (SSR render)', () => {
     expect(colSpans(html)).toContain(10);
   });
 
-  test('fillComponent fills every empty cell AND disables item stretching (binary choice)', () => {
+  test('fillComponent plugs only what stretch (default ∞) leaves — nothing, when one item can fill it all', () => {
     const html = renderToStaticMarkup(
       <Grid cols={4} rows={2} fillComponent={<i>VOID</i>}>
         <GridItem weight={1}>a</GridItem>
       </Grid>,
     );
-    // 4×2 = 8 cells. With fillComponent, `a` stays 1×1 (no stretch) and the other 7 cells get the node.
+    // 4×2 = 8 cells, one elastic item, no cap: it grows to cover the whole grid, so the component
+    // never renders — stretch ran first and left nothing to plug.
     expect(html).toContain('a<');
-    expect(html).toContain('grid-column:1 / span 1;grid-row:1 / span 1'); // `a` did not grow
-    expect(html).toContain('aria-hidden');
-    expect((html.match(/VOID/g) ?? []).length).toBe(7);
+    expect(colSpans(html)).toContain(4);
+    expect(html).not.toContain('VOID');
+  });
+
+  test('fillComponent plugs exactly what a capped stretch could not reach (combine both)', () => {
+    const html = renderToStaticMarkup(
+      <Grid cols={4} rows={2} stretch={1} fillComponent={<i>VOID</i>}>
+        <GridItem weight={1}>a</GridItem>
+      </Grid>,
+    );
+    // stretch=1 grows `a` from 1×1 to 2×2 (one step per axis), covering 4 of 8 cells;
+    // fillComponent plugs the remaining 4 the cap left stuck.
+    expect(html).toContain('a<');
+    expect(html).toContain('grid-column:1 / span 2;grid-row:1 / span 2');
+    expect((html.match(/VOID/g) ?? []).length).toBe(4);
   });
 
   test('rows always draws row tracks — rowHeight="auto" splits, fixed rowHeight reserves', () => {

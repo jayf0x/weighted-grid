@@ -24,10 +24,11 @@ and the API is deliberately small:
 - **Sizing** — `weight` is flexbox-`flex`-style ("how much of the grid do I get"). Pin an axis with
   `cols`/`rows` and `weight` fills the other; pin neither and it drives both. An item with an explicit
   `cols` **or** `rows` is *strict* and never stretches.
-- **Empty cells** — a **binary** choice, not a stack of modes:
-  - pass **`fillComponent`** → items keep their natural span and the node is rendered in every empty
-    cell (stretching is off);
-  - omit it → weight-only items **`stretch`** (default `Infinity`, `0` = off) fairly into the gaps.
+- **Empty cells** — one pass, not a mode switch: weight-only items **`stretch`** (default `Infinity`,
+  `0` = off) fairly into the gaps first, split evenly between the items flanking a gap, never all to
+  one side. Whatever `stretch` can't reach — because it's capped, boxed in, or there's no elastic
+  neighbor — stays a hole; pass **`fillComponent`** to render a node there instead. Omit it and those
+  cells just stay empty.
 - **`rowHeight`** — `"auto"` (default, split the parent height into `rows` bands) or a px/string value
   (fixed per-row height, grid grows downward). `showGrid` toggles a debug overlay.
 
@@ -37,12 +38,13 @@ Strict source order is always preserved; placement is deterministic.
 
 - `src/react.tsx` — `<Grid>` / `<GridItem>` and the whole engine. `spanFor` maps each item to a
   col/row span; the grid owns placement (`placeSpans`, strict order, explicit `grid-column`/`grid-row`
-  lines) and either grows weight items (`fillDeadZones`) or renders `fillComponent` in the holes.
+  lines), grows weight items into the gaps (`fillDeadZones`), then renders `fillComponent` in whatever
+  holes are left.
 - `src/utils.ts` — placement + render helpers: `spanFor`, `placeSpans`, `packedRowCount`,
   `fillDeadZones` (fair round-robin growth), `isElasticItem`, `toCss`, `asGridItems`.
 - `src/index.ts` — package entry; re-exports `Grid`/`GridItem` + types from `./react`.
 - `tests/` — `react-render.test.tsx` (SSR output), `span-for.test.ts` (span math + `fillDeadZones`
-  fairness/caps), `dead-zones.test.ts` (QA baselines via `scripts/dead-zones.ts`).
+  fairness/caps), `dev-report-grid.test.ts` (QA baselines via `scripts/dev-report-grid.ts`).
 - `demo/` — standalone React (Vite) app importing the library from source. Not part of the package.
 
 ## History / restoring the old modes
@@ -63,13 +65,16 @@ bun run typecheck   # tsc --noEmit
 bun run build       # vite lib build → dist/ (index + react entries)
 bun run format      # biome check --write
 cd demo && bunx vite build   # verify the demo compiles
-bun scripts/dead-zones.ts    # QA: dead-zone map + dead%/badness for the Showcase span config
+bun scripts/dev-report-grid.ts   # QA: dev/App.jsx holes, missed-stretch cells, filler-repeat clusters
 scripts/link-local.sh        # build + copy dist/ into ../jayf0x.github.io/node_modules (local test)
 ```
 
-`scripts/dead-zones.ts` analyzes empty space in the span grid from the placement model
-(`placeSpans`) — no browser. Also importable (`analyzeSpans`, `analyzeItems`) for
-`tests/dead-zones.test.ts`.
+`scripts/dev-report-grid.ts` analyzes empty space in the span grid from the placement model
+(`placeSpans`) — no browser needed since the grid owns explicit placement, so this model equals
+what the DOM renders. `analyzeDevGrid`/`formatDevReport` report on the live `dev/src/App.jsx` config
+(holes, which ones `stretch` could've closed instead of a repeated `fillComponent` tile, and
+filler-repeat runs); `analyzeSpans`/`analyzeItems`/`showcaseItems` (behind `--showcase`) are the
+older Showcase-specific report. Also importable for `tests/dev-report-grid.test.ts`.
 
 ## Conventions
 

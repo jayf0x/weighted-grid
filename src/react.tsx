@@ -1,8 +1,9 @@
 /**
  * `weighted-grid` — a weighted CSS-Grid: items sized by `weight` (or exact `cols`/`rows` spans),
- * laid out in strict source order. Empty cells are resolved one of two ways, a **binary** choice:
- * pass `fillComponent` and it's rendered in the gaps (items keep their size), or omit it and
- * weight-only items `stretch` to absorb the gaps. `react` is a peer dependency, not bundled.
+ * laid out in strict source order. Empty cells are resolved in one pass: weight-only items
+ * `stretch` to absorb gaps first (fair, equally split between neighbors on each side — never all
+ * growth to one item), then whatever `stretch` couldn't reach is plugged with `fillComponent`, if
+ * one was passed. `react` is a peer dependency, not bundled.
  */
 import { memo, type CSSProperties, type PropsWithChildren, type ReactNode } from "react";
 import { toCss, spanFor, packedRowCount, placeSpans, fillDeadZones, isElasticItem, asGridItems } from "./utils";
@@ -30,11 +31,11 @@ export type GridProps = PropsWithChildren<{
    * must have a height. A number/string (e.g. `100`, `"5rem"`): fixed height per row, grid grows down. */
   rowHeight?: "auto" | number | string;
   /** Extra cells a weight-only item may grow **per axis** to absorb gaps (`0` off, `Infinity` default
-   * = fill as far as possible). **Ignored when `fillComponent` is set** — the two are a binary choice:
-   * either items stretch into the gaps, or the component fills them. */
+   * = fill as far as possible). Growth is fair — split evenly between the items flanking a gap, never
+   * all to one. Runs first, regardless of `fillComponent`. */
   stretch?: number;
-  /** Rendered in every empty cell. Passing it turns *off* item stretching (see `stretch`); the grid
-   * keeps items at their natural size and drops this node into the gaps instead. Default: undefined. */
+  /** Rendered in whatever's left over after `stretch` — the cells no elastic neighbor could reach.
+   * Doesn't disable stretching; it plugs the remainder. Default: undefined (those cells stay empty). */
   fillComponent?: ReactNode;
   /** Debug overlay: faint column + row guide lines. */
   showGrid?: boolean;
@@ -73,23 +74,19 @@ export const Grid = memo((props: GridProps) => {
   // `rows` forces a fixed count instead.
   const rowCount = rows ?? packedRowCount(gridSpan, cols, false);
 
-  // Own placement (strict source order). Binary gap strategy: with `fillComponent`, keep items at
-  // their natural span and drop the node into empty cells; without it, grow weight-only items.
+  // Own placement (strict source order). Gaps are resolved in one pass: grow weight-only items into
+  // dead cells first (fair, capped by `stretch`), then whatever's left gets `fillComponent`.
   const base = placeSpans(gridSpan, cols, false).placements;
-  const useComponent = fillComponent != null;
-  const placed = useComponent
-    ? base
-    : fillDeadZones(
-        base,
-        items.map((it) => isElasticItem(it.props)),
-        cols,
-        rowCount,
-        stretch,
-      );
+  const placed = fillDeadZones(
+    base,
+    items.map((it) => isElasticItem(it.props)),
+    cols,
+    rowCount,
+    stretch,
+  );
 
-  // Empty cells only matter when the component fills them (one node per cell — predictable).
   const emptyCells: Array<{ r: number; c: number }> = [];
-  if (useComponent) {
+  if (fillComponent != null) {
     const occ = Array.from({ length: rowCount }, () => new Array<boolean>(cols).fill(false));
     for (const p of placed)
       for (let r = p.rowStart; r < p.rowStart + p.rowSpan; r++)

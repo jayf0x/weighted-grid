@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'bun:test';
-import { analyzeItems, analyzeItemsFilled, analyzeSpans, showcaseItems } from '../scripts/dead-zones';
+import {
+  analyzeDevGrid,
+  analyzeItems,
+  analyzeItemsFilled,
+  analyzeSpans,
+  devItems,
+  showcaseItems,
+} from '../scripts/dev-report-grid';
 
 const s = (colSpan: number, rowSpan: number) => ({ colSpan, rowSpan });
 
@@ -71,5 +78,22 @@ describe('Showcase QA baseline (verbatim weightForIndex grid)', () => {
     expect(cap2.dead).toBe(13); // 8%
     expect(full.dead).toBe(9); // 6% — remainder are 1–2 cell "eyes" beside the fixed VoidTiles
     expect(full.badness).toBe(17);
+  });
+});
+
+describe('analyzeDevGrid — combined stretch + fillComponent', () => {
+  // dev/src/App.jsx renders with stretch={10} AND fillComponent: stretch runs first (capped at 10),
+  // fillComponent only plugs what that cap couldn't reach. Anchors the real dev config.
+  test('a stretch cap matching the live prop leaves only the truly stuck cells', () => {
+    const r = analyzeDevGrid(devItems(), 10, 10);
+    expect(r.holes.length).toBe(2);
+    expect(r.holes.every((h) => h.kind === 'stuck')).toBe(true);
+    expect(r.fillerClusters.length).toBe(0); // no repeated filler runs — each stuck cell is isolated
+  });
+
+  test('stretch=0 pushes everything onto fillComponent instead', () => {
+    const noStretch = analyzeDevGrid(devItems(), 10, 0);
+    const withStretch = analyzeDevGrid(devItems(), 10, 10);
+    expect(noStretch.holes.length).toBeGreaterThan(withStretch.holes.length);
   });
 });
