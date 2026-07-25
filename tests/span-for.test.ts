@@ -68,10 +68,13 @@ describe('spanFor', () => {
 
 describe('fillDeadZones — fair round-robin growth', () => {
   const at = (colStart: number): Placement => ({ colStart, rowStart: 0, colSpan: 1, rowSpan: 1 });
+  const both = { col: true, row: true };
+  const rowOnly = { col: false, row: true }; // e.g. a `cols`-pinned item: col fixed, row weight-driven
+  const none = { col: false, row: false };
 
   test('two elastic items flanking a gap share it (3/2), not first-eats-all (4/1)', () => {
     // cols=5, one row: item A at col0, item B at col4, gap = cols 1,2,3. Both border it.
-    const out = fillDeadZones([at(0), at(4)], [true, true], 5, 1);
+    const out = fillDeadZones([at(0), at(4)], [both, both], 5, 1);
     // Round-robin: A grows to 3 wide (cols0-2), B to 2 wide (cols3-4). Greedy would give 4/1.
     expect(out.map((p) => p.colSpan)).toEqual([3, 2]);
     // Gap-free, no overlap: the two spans tile all 5 columns exactly once.
@@ -81,14 +84,23 @@ describe('fillDeadZones — fair round-robin growth', () => {
   });
 
   test('fixed (non-elastic) items never grow', () => {
-    const out = fillDeadZones([at(0), at(4)], [false, true], 5, 1);
+    const out = fillDeadZones([at(0), at(4)], [none, both], 5, 1);
     expect(out[0].colSpan).toBe(1); // fixed stays put
     expect(out[1].colSpan).toBe(4); // elastic absorbs the whole gap
   });
 
   test('maxStretch caps growth per axis', () => {
-    const out = fillDeadZones([at(0), at(4)], [true, true], 5, 1, 1);
+    const out = fillDeadZones([at(0), at(4)], [both, both], 5, 1, 1);
     // Each may gain at most 1 cell → A 2 wide, B 2 wide, one column stays dead.
     expect(out.map((p) => p.colSpan)).toEqual([2, 2]);
+  });
+
+  test('an item pinned on one axis can still grow on the other (per-axis elasticity)', () => {
+    // A is col-pinned but row-elastic (e.g. `cols` was set, `rows` was not); give it 2 rows of
+    // headroom below in a 1-wide grid.
+    const a: Placement = { colStart: 0, rowStart: 0, colSpan: 1, rowSpan: 1 };
+    const out = fillDeadZones([a], [rowOnly], 1, 3);
+    expect(out[0].colSpan).toBe(1); // col axis pinned, never grows
+    expect(out[0].rowSpan).toBe(3); // row axis still weight-driven, absorbs the dead rows below
   });
 });

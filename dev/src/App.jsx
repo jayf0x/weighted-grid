@@ -28,30 +28,34 @@ const CARDS = [
 ];
 
 export const App = () => {
-  const nrCols = 8;
+  const nrCols = 4;
 
   return (
-    <section className="mx-auto w-[600px] h-[600px] m-5">
+    <section className="mx-auto w-[900px] h-[600px] m-5">
       <p id="global_stats">
         <p>nrCards: {CARDS.length}</p>
       </p>
       <Grid
-        cols={nrCols}
-        rows={nrCols}
+        cols={10}
+        // rows={160}
         showGrid
         stretch={4}
         fillComponent={
-          <div className="bg-[#f43e] w-full h-full" id="filler">
+          <div className="bg-[#f439] w-full h-full" id="filler">
             _
           </div>
         }
+        gap={10}
+        // className="bg-amber-300"
       >
         {CARDS.map((args, i) => (
           <GridItem key={i} {...args}>
-            <div className="bg-[#35ee] w-full h-full text-xs" id="item">
-              <span id="index">{i}</span>
+            <div className="bg-[#35e9] w-full h-full text-[0.6rem]" id="item">
+              <span id="index">{i}) </span>
               <span id="index" id="args">
-                {JSON.stringify(args)}
+                {Object.entries(args)
+                  .map(([k, v]) => k.slice(0, 1) + ": " + v)
+                  .join(", ")}
               </span>
             </div>
           </GridItem>

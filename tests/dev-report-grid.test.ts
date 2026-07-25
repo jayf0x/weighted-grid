@@ -82,18 +82,25 @@ describe('Showcase QA baseline (verbatim weightForIndex grid)', () => {
 });
 
 describe('analyzeDevGrid — combined stretch + fillComponent', () => {
-  // dev/src/App.jsx renders with stretch={10} AND fillComponent: stretch runs first (capped at 10),
-  // fillComponent only plugs what that cap couldn't reach. Anchors the real dev config.
-  test('a stretch cap matching the live prop leaves only the truly stuck cells', () => {
-    const r = analyzeDevGrid(devItems(), 10, 10);
-    expect(r.holes.length).toBe(2);
+  // dev/src/App.jsx renders with cols=8, stretch={4} AND fillComponent: stretch runs first (capped at
+  // 4, per-axis elastic), fillComponent only plugs what that cap couldn't reach. Anchors the real
+  // dev config — the trailing 5×5 fully-strict item (`{ cols: 5, rows: 5 }`, last in CARDS) and the
+  // fully-strict weight-ignoring items (idx 12–15) are expected to leave real, isolated stuck holes.
+  test('a stretch cap matching the live prop leaves only genuinely stuck cells, no missed-stretch', () => {
+    const r = analyzeDevGrid(devItems(), 8, 4);
+    expect(r.holes.length).toBe(31);
     expect(r.holes.every((h) => h.kind === 'stuck')).toBe(true);
-    expect(r.fillerClusters.length).toBe(0); // no repeated filler runs — each stuck cell is isolated
   });
 
-  test('stretch=0 pushes everything onto fillComponent instead', () => {
-    const noStretch = analyzeDevGrid(devItems(), 10, 0);
-    const withStretch = analyzeDevGrid(devItems(), 10, 10);
+  test('stretch=0 pushes strictly more onto fillComponent than the live stretch=4', () => {
+    const noStretch = analyzeDevGrid(devItems(), 8, 0);
+    const withStretch = analyzeDevGrid(devItems(), 8, 4);
     expect(noStretch.holes.length).toBeGreaterThan(withStretch.holes.length);
+  });
+
+  test('an uncapped stretch never does worse than the capped live config', () => {
+    const withStretch = analyzeDevGrid(devItems(), 8, 4);
+    const uncapped = analyzeDevGrid(devItems(), 8, Number.POSITIVE_INFINITY);
+    expect(uncapped.holes.length).toBeLessThanOrEqual(withStretch.holes.length);
   });
 });

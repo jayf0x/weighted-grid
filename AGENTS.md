@@ -22,13 +22,21 @@ and the API is deliberately small:
 ```
 
 - **Sizing** — `weight` is flexbox-`flex`-style ("how much of the grid do I get"). Pin an axis with
-  `cols`/`rows` and `weight` fills the other; pin neither and it drives both. An item with an explicit
-  `cols` **or** `rows` is *strict* and never stretches.
-- **Empty cells** — one pass, not a mode switch: weight-only items **`stretch`** (default `Infinity`,
-  `0` = off) fairly into the gaps first, split evenly between the items flanking a gap, never all to
-  one side. Whatever `stretch` can't reach — because it's capped, boxed in, or there's no elastic
-  neighbor — stays a hole; pass **`fillComponent`** to render a node there instead. Omit it and those
-  cells just stay empty.
+  `cols`/`rows` and `weight` fills the other; pin neither and it drives both. Elasticity is **per
+  axis**: `cols={2}` pins only the column axis (it never stretches horizontally) while `weight` keeps
+  the row axis elastic, and vice versa. Only an item with **both** `cols` and `rows` pinned is fully
+  strict on both axes.
+- **Empty cells** — one pass, not a mode switch: elastic axes **`stretch`** (default `Infinity`, `0` =
+  off) fairly into the gaps first, split evenly between the items flanking a gap, never all to one
+  side. Whatever `stretch` can't reach — because it's capped, boxed in, or there's no elastic neighbor
+  — stays a hole. Adjacent holes merge into unified rectangular blocks (`groupEmptyRects`); pass
+  **`fillComponent`** to render one node per block instead of one per cell. Omit it and those cells
+  just stay empty.
+- **`rows`** — a floor, not a cap. Content that needs more rows than declared always gets them (same
+  as CSS Grid's own implicit-row overflow); setting it larger than content only reserves headroom for
+  `stretch`. Never let a `rowCount` used for occupancy tracking be smaller than what placement actually
+  needs — that's what silently broke `stretch`/`fillComponent` for any row past a too-small `rows` in
+  the past (see the `rows` prop test in `react-render.test.tsx`).
 - **`rowHeight`** — `"auto"` (default, split the parent height into `rows` bands) or a px/string value
   (fixed per-row height, grid grows downward). `showGrid` toggles a debug overlay.
 
@@ -38,10 +46,11 @@ Strict source order is always preserved; placement is deterministic.
 
 - `src/react.tsx` — `<Grid>` / `<GridItem>` and the whole engine. `spanFor` maps each item to a
   col/row span; the grid owns placement (`placeSpans`, strict order, explicit `grid-column`/`grid-row`
-  lines), grows weight items into the gaps (`fillDeadZones`), then renders `fillComponent` in whatever
-  holes are left.
+  lines), grows elastic axes into the gaps (`fillDeadZones`), then renders `fillComponent` into
+  whatever holes are left, merged via `groupEmptyRects`.
 - `src/utils.ts` — placement + render helpers: `spanFor`, `placeSpans`, `packedRowCount`,
-  `fillDeadZones` (fair round-robin growth), `isElasticItem`, `toCss`, `asGridItems`.
+  `fillDeadZones` (fair round-robin growth, per-axis via `elasticityOf`), `groupEmptyRects` (merges
+  leftover holes into rectangular filler blocks), `toCss`, `asGridItems`.
 - `src/index.ts` — package entry; re-exports `Grid`/`GridItem` + types from `./react`.
 - `tests/` — `react-render.test.tsx` (SSR output), `span-for.test.ts` (span math + `fillDeadZones`
   fairness/caps), `dev-report-grid.test.ts` (QA baselines via `scripts/dev-report-grid.ts`).
@@ -65,16 +74,18 @@ bun run typecheck   # tsc --noEmit
 bun run build       # vite lib build → dist/ (index + react entries)
 bun run format      # biome check --write
 cd demo && bunx vite build   # verify the demo compiles
-bun scripts/dev-report-grid.ts   # QA: dev/App.jsx holes, missed-stretch cells, filler-repeat clusters
+bun scripts/dev-report-grid.ts   # QA: dev/App.jsx holes, missed-stretch cells, fillComponent tile count
 scripts/link-local.sh        # build + copy dist/ into ../jayf0x.github.io/node_modules (local test)
 ```
 
 `scripts/dev-report-grid.ts` analyzes empty space in the span grid from the placement model
 (`placeSpans`) — no browser needed since the grid owns explicit placement, so this model equals
 what the DOM renders. `analyzeDevGrid`/`formatDevReport` report on the live `dev/src/App.jsx` config
-(holes, which ones `stretch` could've closed instead of a repeated `fillComponent` tile, and
-filler-repeat runs); `analyzeSpans`/`analyzeItems`/`showcaseItems` (behind `--showcase`) are the
-older Showcase-specific report. Also importable for `tests/dev-report-grid.test.ts`.
+(holes, which ones `stretch` could've closed instead of ending up in a `fillComponent` tile, and the
+actual merged `fillComponent` tiles the grid would render); `devItems()` is a *verbatim* copy of
+`dev/src/App.jsx`'s `CARDS` — keep them in sync when the dev app changes, or the report stops meaning
+anything. `analyzeSpans`/`analyzeItems`/`showcaseItems` (behind `--showcase`) are the older
+Showcase-specific report. Also importable for `tests/dev-report-grid.test.ts`.
 
 ## Conventions
 

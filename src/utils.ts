@@ -108,22 +108,29 @@ export const placeSpans = (spans: Span[], cols: number, isPacked: boolean): Plac
 export const packedRowCount = (spans: Span[], cols: number, isPacked: boolean): number =>
   placeSpans(spans, cols, isPacked).rows;
 
-/** An item is *elastic* when its size comes only from `weight` (no explicit `cols`/`rows`) — it may
- * grow to absorb dead cells. Items with an explicit span are fixed. */
-export const isElasticItem = (props: GridItemProps): boolean => props.cols == null && props.rows == null;
+/** Per-axis elasticity: an axis may grow to absorb dead cells only when *that* axis came from
+ * `weight`, not an explicit pin. `cols={2}` pins the column axis (never grows horizontally) but
+ * leaves rows weight-driven (still grows vertically), and vice versa. Only an item with *both*
+ * `cols` and `rows` pinned is fully strict. */
+export type Elasticity = { col: boolean; row: boolean };
+
+export const elasticityOf = (props: GridItemProps): Elasticity => ({
+  col: props.cols == null,
+  row: props.rows == null,
+});
 
 /**
- * Grow elastic items into adjacent dead cells so the span grid fills without reordering — the
+ * Grow elastic items/axes into adjacent dead cells so the span grid fills without reordering — the
  * "dead-zone-aware" pass on top of {@link placeSpans}. Growth is **fair**: each pass, every elastic
- * item grows by at most one cell (first free direction: right, left, down, up), so slack is shared
+ * axis grows by at most one cell (first free direction: right, left, down, up), so slack is shared
  * round-robin instead of the first item eating it all. Repeats to a fixpoint. `maxStretch` caps how
  * many extra cells an item may gain *per axis* over its original span (`Infinity` = fill as far as
- * possible; `0` = no growth). Fixed items keep their span.
+ * possible; `0` = no growth). Pinned axes (see {@link Elasticity}) never grow.
  * Returns a fresh placement array, same length/order as the input. Deterministic.
  */
 export const fillDeadZones = (
   placements: Placement[],
-  isElastic: boolean[],
+  elastic: Elasticity[],
   cols: number,
   rows: number,
   maxStretch = Number.POSITIVE_INFINITY,
@@ -150,16 +157,15 @@ export const fillDeadZones = (
     return true;
   };
 
-  // Fair fixpoint: each pass, every elastic item grows by at most ONE cell (first free direction).
+  // Fair fixpoint: each pass, every elastic axis grows by at most ONE cell (first free direction).
   // Sharing slack across passes keeps growth even (A +1, then B +1) instead of A eating it all.
   let changed = true;
   while (changed) {
     changed = false;
     for (let i = 0; i < out.length; i++) {
-      if (!isElastic[i]) continue;
       const p = out[i];
-      const colRoom = p.colSpan - orig[i].colSpan < maxStretch;
-      const rowRoom = p.rowSpan - orig[i].rowSpan < maxStretch;
+      const colRoom = elastic[i].col && p.colSpan - orig[i].colSpan < maxStretch;
+      const rowRoom = elastic[i].row && p.rowSpan - orig[i].rowSpan < maxStretch;
       if (colRoom && colFree(p, p.colStart + p.colSpan)) {
         for (let r = p.rowStart; r < p.rowStart + p.rowSpan; r++) set(r, p.colStart + p.colSpan);
         p.colSpan++;
@@ -182,4 +188,36 @@ export const fillDeadZones = (
     }
   }
   return out;
+};
+
+/**
+ * Merge the empty cells left after {@link fillDeadZones} into unified rectangular blocks — so
+ * `fillComponent` renders one wide/tall tile per gap instead of a 1×1 tile per cell. Greedy scan,
+ * top-left to bottom-right: each uncovered empty cell grows as wide as the row allows, then as tall
+ * as that full width stays empty. Not the minimal rectangle count, but deterministic and always
+ * gap-free/overlap-free — good enough for a filler tile, which has no identity to preserve.
+ */
+export const groupEmptyRects = (occupied: boolean[][], cols: number, rows: number): Placement[] => {
+  const covered: boolean[][] = Array.from({ length: rows }, () => new Array(cols).fill(false));
+  const rects: Placement[] = [];
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (occupied[r]?.[c] || covered[r][c]) continue;
+
+      let w = 1;
+      while (c + w < cols && !occupied[r]?.[c + w] && !covered[r][c + w]) w++;
+
+      let h = 1;
+      grow: while (r + h < rows) {
+        for (let cc = c; cc < c + w; cc++) if (occupied[r + h]?.[cc] || covered[r + h][cc]) break grow;
+        h++;
+      }
+
+      for (let rr = r; rr < r + h; rr++) for (let cc = c; cc < c + w; cc++) covered[rr][cc] = true;
+      rects.push({ colStart: c, rowStart: r, colSpan: w, rowSpan: h });
+    }
+  }
+
+  return rects;
 };

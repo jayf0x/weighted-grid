@@ -101,17 +101,18 @@ describe('Grid (SSR render)', () => {
     expect(html).not.toContain('VOID');
   });
 
-  test('fillComponent plugs exactly what a capped stretch could not reach (combine both)', () => {
+  test('fillComponent plugs exactly what a capped stretch could not reach, as one unified block', () => {
     const html = renderToStaticMarkup(
       <Grid cols={4} rows={2} stretch={1} fillComponent={<i>VOID</i>}>
         <GridItem weight={1}>a</GridItem>
       </Grid>,
     );
-    // stretch=1 grows `a` from 1×1 to 2×2 (one step per axis), covering 4 of 8 cells;
-    // fillComponent plugs the remaining 4 the cap left stuck.
+    // stretch=1 grows `a` from 1×1 to 2×2 (one step per axis), covering 4 of 8 cells; the remaining
+    // 4 (a contiguous 2×2 block, cols 3-4 / rows 1-2) render as ONE fillComponent tile, not four.
     expect(html).toContain('a<');
     expect(html).toContain('grid-column:1 / span 2;grid-row:1 / span 2');
-    expect((html.match(/VOID/g) ?? []).length).toBe(4);
+    expect(html).toContain('grid-column:3 / span 2;grid-row:1 / span 2');
+    expect((html.match(/VOID/g) ?? []).length).toBe(1);
   });
 
   test('rows always draws row tracks — rowHeight="auto" splits, fixed rowHeight reserves', () => {
@@ -129,6 +130,23 @@ describe('Grid (SSR render)', () => {
     expect(auto).toContain('grid-template-rows:repeat(3, minmax(0, 1fr))');
     expect(auto).toContain('height:100%');
     expect(fixed).toContain('grid-template-rows:repeat(3, 40px)');
+  });
+
+  test('an explicit rows smaller than content is a floor, not a cap — overflow rows still stretch/fill', () => {
+    // cols=2, rows=1 declared, but 3 weight-1 items need 2 rows (a,b on row0; c alone on row1).
+    // Regression: rowCount used to be clamped to the declared `rows`, so occupancy tracking for
+    // anything past it silently went blind — nothing past row 1 could ever stretch.
+    const html = renderToStaticMarkup(
+      <Grid cols={2} rows={1}>
+        <GridItem weight={1}>a</GridItem>
+        <GridItem weight={1}>b</GridItem>
+        <GridItem weight={1}>c</GridItem>
+      </Grid>,
+    );
+
+    expect(html).toContain('grid-template-rows:repeat(2, minmax(0, 1fr))'); // grew past the declared 1
+    // b (row0, col1) stretches down into row 2 — only reachable if rowCount wasn't clamped to 1.
+    expect(html).toContain('grid-column:2 / span 1;grid-row:1 / span 2');
   });
 
   test('omitting rows auto-fills height: exactly the occupied rows stretch (1fr)', () => {

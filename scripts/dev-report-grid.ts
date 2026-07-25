@@ -9,13 +9,12 @@
  *
  * Run:   bun scripts/dev-report-grid.ts               # holes/stretch/filler-repeats for dev/src/App.jsx
  *        bun scripts/dev-report-grid.ts --cols=8      # override the column count
- *        bun scripts/dev-report-grid.ts --cards=30    # override the item count
  *        bun scripts/dev-report-grid.ts --stretch=5   # override the stretch cap (matches the Grid prop)
  *        bun scripts/dev-report-grid.ts --showcase    # the old Showcase dead-zone report
  * Import: `analyzeDevGrid`/`formatDevReport` for the dev report, `analyzeSpans`/`formatReport` for
  * unit tests (see tests/dev-report-grid.test.ts).
  */
-import { placeSpans, spanFor, fillDeadZones, isElasticItem, type Placement, type Span } from '../src/utils';
+import { placeSpans, spanFor, fillDeadZones, elasticityOf, groupEmptyRects, type Placement, type Span } from '../src/utils';
 import type { GridItemProps } from '../src/react';
 
 export type DeadZoneReport = {
@@ -88,7 +87,7 @@ export const analyzeItemsFilled = (
   maxStretch = Number.POSITIVE_INFINITY,
 ): DeadZoneReport => {
   const { placements, rows } = placeSpans(items.map((p) => spanFor(p, cols)), cols, false);
-  const filled = fillDeadZones(placements, items.map(isElasticItem), cols, rows, maxStretch);
+  const filled = fillDeadZones(placements, items.map(elasticityOf), cols, rows, maxStretch);
   return reportFromOccupancy(occupancyOf(filled, cols, rows), cols, rows);
 };
 
@@ -134,20 +133,34 @@ export const showcaseItems = (count = 12): GridItemProps[] => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// dev/src/App.jsx config — a verbatim copy of the demo's `weightForIndex` (all items are weight-only,
-// so every one is elastic) so this report matches whatever the demo is currently showing. Keep in sync.
+// dev/src/App.jsx config — a *verbatim* copy of `CARDS` in dev/src/App.jsx: weight-only items, items
+// with one axis pinned (`cols` xor `rows`), and items with both pinned (fully strict). Keep in sync.
 // ─────────────────────────────────────────────────────────────────────────────
-const devWeightForIndex = (i: number): number => {
-  if (i === 0) return 3;
-  const x = Math.sin(i * 12.9898) * 43758.5453;
-  const r = x - Math.floor(x);
-  if (r < 0.15) return 4;
-  if (r < 0.55) return 3;
-  return 2;
-};
-
-export const devItems = (count = 21): GridItemProps[] =>
-  Array.from({ length: count }, (_, i) => ({ weight: devWeightForIndex(i) }));
+export const devItems = (): GridItemProps[] => [
+  { weight: 1 },
+  { weight: 2 },
+  { weight: 3 },
+  { weight: 4 },
+  // fixed cols
+  { weight: 1, cols: 1 },
+  { weight: 2, cols: 1 },
+  { weight: 3, cols: 2 },
+  { weight: 4, cols: 2 },
+  // fixed rows
+  { weight: 1, rows: 1 },
+  { weight: 2, rows: 1 },
+  { weight: 3, rows: 2 },
+  { weight: 4, rows: 2 },
+  // fixed cols and rows — weight should not have any effect
+  { weight: 10, cols: 1, rows: 1 },
+  { weight: 20, cols: 1, rows: 1 },
+  { weight: 30, cols: 2, rows: 2 },
+  { weight: 40, cols: 2, rows: 2 },
+  // could be largest, depending on others
+  { weight: 4 },
+  // should be largest
+  { cols: 5, rows: 5 },
+];
 
 export type HoleKind = 'stuck' | 'missed-stretch';
 
@@ -157,8 +170,9 @@ export type DevGridReport = {
   /** ASCII map: `#`=item, `~`=hole a neighbor could've stretched into, `.`=hole nothing can reach. */
   map: string;
   holes: { row: number; col: number; kind: HoleKind }[];
-  /** Contiguous horizontal runs of holes — each is one `fillComponent` tile repeated N cells across. */
-  fillerClusters: { row: number; colStart: number; len: number }[];
+  /** The actual `fillComponent` tiles the grid renders — holes merged into unified rectangular
+   * blocks (see {@link groupEmptyRects}), exactly as `src/react.tsx` does. */
+  fillerTiles: { row: number; col: number; rowSpan: number; colSpan: number }[];
 };
 
 /**
@@ -172,12 +186,16 @@ export type DevGridReport = {
  */
 export const analyzeDevGrid = (
   items: GridItemProps[] = devItems(),
-  cols = 10,
-  maxStretch = 10,
+  cols = 8,
+  maxStretch = 4,
+  minRows = cols, // dev/src/App.jsx passes `rows={nrCols}` — same value as `cols`
 ): DevGridReport => {
   const spans = items.map((p) => spanFor(p, cols));
-  const { placements, rows } = placeSpans(spans, cols, false);
-  const isElastic = items.map(isElasticItem);
+  const { placements, rows: contentRows } = placeSpans(spans, cols, false);
+  // `rows` is a floor, not a cap — see `src/react.tsx`'s `rowCount`. Mirror that here so this report
+  // stays accurate for configs where the declared `rows` is smaller than what content needs.
+  const rows = Math.max(minRows, contentRows);
+  const isElastic = items.map(elasticityOf);
   const renderedOcc = occupancyOf(fillDeadZones(placements, isElastic, cols, rows, maxStretch), cols, rows);
   const stretchedOcc = occupancyOf(
     fillDeadZones(placements, isElastic, cols, rows, Number.POSITIVE_INFINITY),
@@ -201,27 +219,18 @@ export const analyzeDevGrid = (
     mapLines.push(line);
   }
 
-  // Run-length encode horizontal hole runs — each run is one fillComponent tile repeated across N cells.
-  const fillerClusters: DevGridReport['fillerClusters'] = [];
-  for (let r = 0; r < rows; r++) {
-    let c = 0;
-    while (c < cols) {
-      if (mapLines[r][c] === '#') {
-        c++;
-        continue;
-      }
-      let len = 0;
-      while (c + len < cols && mapLines[r][c + len] !== '#') len++;
-      if (len > 1) fillerClusters.push({ row: r, colStart: c, len });
-      c += len;
-    }
-  }
+  const fillerTiles = groupEmptyRects(renderedOcc, cols, rows).map((p) => ({
+    row: p.rowStart,
+    col: p.colStart,
+    rowSpan: p.rowSpan,
+    colSpan: p.colSpan,
+  }));
 
-  return { cols, rows, map: mapLines.join('\n'), holes, fillerClusters };
+  return { cols, rows, map: mapLines.join('\n'), holes, fillerTiles };
 };
 
 export const formatDevReport = (report: DevGridReport, title = 'dev/App.jsx grid report'): string => {
-  const { cols, rows, map, holes, fillerClusters } = report;
+  const { cols, rows, map, holes, fillerTiles } = report;
   const stuck = holes.filter((h) => h.kind === 'stuck');
   const missed = holes.filter((h) => h.kind === 'missed-stretch');
   const lines = [
@@ -230,11 +239,9 @@ export const formatDevReport = (report: DevGridReport, title = 'dev/App.jsx grid
     `holes: ${holes.length}  stuck: ${stuck.length}  missed-stretch: ${missed.length}`,
   ];
   if (missed.length) lines.push(`  missed-stretch at (row,col): ${missed.map((h) => `(${h.row},${h.col})`).join(' ')}`);
-  if (fillerClusters.length) {
-    lines.push(
-      `filler repeats — ${fillerClusters.length} run${fillerClusters.length === 1 ? '' : 's'} of 2+ adjacent filler tiles:`,
-    );
-    for (const f of fillerClusters) lines.push(`  row ${f.row}, cols ${f.colStart}-${f.colStart + f.len - 1} (${f.len} tiles)`);
+  if (fillerTiles.length) {
+    lines.push(`fillComponent renders ${fillerTiles.length} tile${fillerTiles.length === 1 ? '' : 's'} (merged, not one per cell):`);
+    for (const f of fillerTiles) lines.push(`  row ${f.row}, col ${f.col} — ${f.colSpan}×${f.rowSpan}`);
   }
   return lines.join('\n');
 };
@@ -251,11 +258,9 @@ if (import.meta.main) {
       console.log(formatReport(analyzeItemsFilled(items, cols, cap), `order-mode fill (stretch=${cap})`));
     }
   } else {
-    const cardsArg = process.argv.find((a) => a.startsWith('--cards='));
     const stretchArg = process.argv.find((a) => a.startsWith('--stretch='));
-    const cols = colsArg ? Number(colsArg.split('=')[1]) : 10;
-    const count = cardsArg ? Number(cardsArg.split('=')[1]) : 21;
-    const maxStretch = stretchArg ? Number(stretchArg.split('=')[1]) : 10; // matches dev/src/App.jsx's stretch prop
-    console.log(formatDevReport(analyzeDevGrid(devItems(count), cols, maxStretch)));
+    const cols = colsArg ? Number(colsArg.split('=')[1]) : 8; // matches dev/src/App.jsx's nrCols
+    const maxStretch = stretchArg ? Number(stretchArg.split('=')[1]) : 4; // matches dev/src/App.jsx's stretch prop
+    console.log(formatDevReport(analyzeDevGrid(devItems(), cols, maxStretch)));
   }
 }
