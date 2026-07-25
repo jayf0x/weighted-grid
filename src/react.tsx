@@ -65,8 +65,8 @@ export type GridProps = PropsWithChildren<{
   /** Rendered in whatever's left over after `stretch` — the cells no elastic neighbor could reach.
    * Doesn't disable stretching; it plugs the remainder. Default: undefined (those cells stay empty). */
   fillComponent?: ReactNode;
-  /** Debug overlay: tints the real `gap` gutter between items, so column/row boundaries are always
-   * exactly where items actually are — not a simulated line that can drift out of sync with `gap`. */
+  /** Debug overlay: draws a guide line exactly on the real `gap` gutter between items (a gradient
+   * whose period accounts for `gap`, not a simulated line that can drift out of sync with it). */
   showGrid?: boolean;
   /** Smoothly transition an item's on-screen size when its span changes (e.g. `stretch` growing it
    * into a gap after a re-layout). CSS Grid line/span values aren't natively interpolable, so this
@@ -84,11 +84,24 @@ export type GridProps = PropsWithChildren<{
 /** Marker component — `Grid` reads its props and renders its children in the assigned block. */
 export const GridItem = (_: GridItemProps): null => null;
 
-// `showGrid`'s guide lines are the real `gap` gutter, not a simulated overlay: paint the container
-// with the line color and let items (which fully cover their own cell) hide it everywhere except the
-// gaps between them. A background-image formula reimplementing the track math would have to account
-// for `gap` itself — real layout, done once by the browser, can't drift out of sync with itself.
-const gridLinesColor = 'rgba(128,128,128,.4)';
+// `showGrid`'s guide lines are drawn exactly where the real `gap` gutter is — a repeating gradient
+// whose period is `track + gap` (both track and gap expressed in the same `calc()`, so it works for
+// any gap unit, not just px). Each period is transparent for the track's own width, then the line
+// color for exactly one `gap`-width band. Unlike painting the container itself, this only ever
+// marks the gap band — it can't bleed grey into a semi-transparent item's own interior, and unlike a
+// naive `100% / n` division, the math includes `gap` so the band never drifts off the real gutter.
+const gridLinesColor = 'rgba(128,128,128,.5)';
+
+const gridLinesStyle = (nrCols: number, rowCount: number, gapCss: string): CSSProperties => {
+  const band = (count: number, direction: 'to right' | 'to bottom') => {
+    if (count <= 1) return null;
+    const track = `calc((100% - ${count - 1} * ${gapCss}) / ${count})`;
+    const period = `calc(${track} + ${gapCss})`;
+    return `repeating-linear-gradient(${direction}, transparent 0, transparent ${track}, ${gridLinesColor} ${track}, ${gridLinesColor} ${period})`;
+  };
+  const layers = [band(nrCols, 'to right'), band(rowCount, 'to bottom')].filter(Boolean);
+  return layers.length ? { backgroundImage: layers.join(',') } : {};
+};
 
 const FLIP_MS = 200;
 
@@ -203,14 +216,15 @@ export const Grid = memo((props: GridProps) => {
     fillerRects = groupEmptyRects(occ, nrCols, rowCount);
   }
 
+  const gapCss = toCss(gap);
   const containerStyles: CSSProperties = {
     display: 'grid',
     gridTemplateColumns: `repeat(${nrCols}, minmax(0, 1fr))`,
     gridTemplateRows: `repeat(${rowCount}, ${track})`,
     gridAutoRows: track,
-    gap: toCss(gap),
+    gap: gapCss,
     ...(rowHeight === 'auto' ? { height: '100%' } : {}),
-    ...(showGrid ? { background: gridLinesColor } : {}),
+    ...(showGrid ? gridLinesStyle(nrCols, rowCount, gapCss) : {}),
     ...style,
   };
 

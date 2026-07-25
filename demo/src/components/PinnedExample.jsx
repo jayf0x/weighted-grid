@@ -20,7 +20,7 @@ export function PinnedExample() {
         span grid — exact cols/rows, mixed with weighted squares
       </h2>
       <div className="h-[220px] w-full overflow-auto rounded-lg border border-line bg-panel p-1.5">
-        <Grid cols={6} gap={6} className="h-full w-full">
+        <Grid nrCols={6} gap={6} className="h-full w-full">
           <GridItem cols={3} rows={2}>
             <Cell i={0} label="cols=3 rows=2" />
           </GridItem>

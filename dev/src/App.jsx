@@ -1,4 +1,4 @@
-import { Grid, GridItem } from 'weighted-grid/react';
+import { Grid, GridItem } from "weighted-grid/react";
 
 const CARDS = [
   { weight: 1 },
@@ -51,8 +51,8 @@ export const App = () => {
               <span id="index">{i}) </span>
               <span id="args">
                 {Object.entries(args)
-                  .map(([k, v]) => k.slice(0, 1) + ': ' + v)
-                  .join(', ')}
+                  .map(([k, v]) => k.slice(0, 1) + ": " + v)
+                  .join(", ")}
               </span>
             </div>
           </GridItem>

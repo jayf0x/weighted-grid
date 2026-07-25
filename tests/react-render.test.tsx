@@ -169,20 +169,35 @@ describe('Grid (SSR render)', () => {
     expect(html).toContain('height:100%');
   });
 
-  test('showGrid tints the container so the real gap gutter reads as guide lines', () => {
+  test('showGrid draws guide lines whose period accounts for gap, not a background wash', () => {
     const on = renderToStaticMarkup(
-      <Grid nrCols={6} nrRows={4} showGrid>
+      <Grid nrCols={6} nrRows={4} gap={10} showGrid>
         <GridItem weight={1}>a</GridItem>
       </Grid>,
     );
     const off = renderToStaticMarkup(
-      <Grid nrCols={6} nrRows={4}>
+      <Grid nrCols={6} nrRows={4} gap={10}>
         <GridItem weight={1}>a</GridItem>
       </Grid>,
     );
 
-    expect(on).toContain('background:rgba(128,128,128,.4)');
-    expect(off).not.toContain('background:');
+    // Column period: track (100% minus 5 gaps over 6 cols) + one gap — never a flat `100% / 6`.
+    expect(on).toContain(
+      'repeating-linear-gradient(to right, transparent 0, transparent calc((100% - 5 * 10px) / 6), rgba(128,128,128,.5) calc((100% - 5 * 10px) / 6), rgba(128,128,128,.5) calc(calc((100% - 5 * 10px) / 6) + 10px))',
+    );
+    expect(on).toContain('repeating-linear-gradient(to bottom,');
+    // Not a flat fill — must not appear anywhere in the item's own cell interior.
+    expect(on).not.toContain('background:rgba');
+    expect(off).not.toContain('background-image');
+  });
+
+  test('showGrid with a single column/row draws no line on that axis (nothing to divide)', () => {
+    const html = renderToStaticMarkup(
+      <Grid nrCols={1} nrRows={1} showGrid>
+        <GridItem weight={1}>a</GridItem>
+      </Grid>,
+    );
+    expect(html).not.toContain('background-image');
   });
 
   // Regression: an explicitly-passed `undefined` prop must fall back to its default, not clobber it.
