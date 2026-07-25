@@ -91,6 +91,32 @@ describe('Grid (SSR render)', () => {
     expect(colSpans(html)).toContain(10);
   });
 
+  test('GridItem stretch lets a pinned axis flex without unpinning it', () => {
+    const html = renderToStaticMarkup(
+      <Grid nrCols={5}>
+        <GridItem cols={2} rows={1} stretch={1}>
+          fixed
+        </GridItem>
+      </Grid>,
+    );
+    // Plain `cols={2}` would freeze at 2 wide, leaving cols 3-5 dead (nothing else to absorb them).
+    // stretch={1} lets this cols-pinned axis still grow by 1 cell into the gap, without unpinning it.
+    expect(colSpans(html)).toEqual([3]);
+  });
+
+  test('GridItem stretchX/stretchY cap growth per axis independently of `stretch`', () => {
+    const html = renderToStaticMarkup(
+      <Grid nrCols={4} nrRows={3} stretch={0}>
+        <GridItem cols={1} rows={1} stretch={5} stretchY={0}>
+          a
+        </GridItem>
+      </Grid>,
+    );
+    // Grid-level stretch=0 would normally freeze everything; item-level stretch=5 overrides that for
+    // the column axis (grows to fill all 4), but stretchY=0 overrides `stretch` back down for rows.
+    expect(html).toContain('grid-column:1 / span 4;grid-row:1 / span 1');
+  });
+
   test('fillComponent plugs only what stretch (default ∞) leaves — nothing, when one item can fill it all', () => {
     const html = renderToStaticMarkup(
       <Grid nrCols={4} nrRows={2} fillComponent={<i>VOID</i>}>

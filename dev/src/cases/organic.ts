@@ -5,19 +5,24 @@
 // not uniform noise every step. So instead of rolling a shape per tile in isolation, a smoothly
 // interpolated 1D value-noise trend drifts across the sequence and biases *nearby* tiles toward
 // similar sizes (a "patch"); a second, independent noise channel decides when to break for a void,
-// so voids don't sync up with the size trend. Card shapes pin at most one axis — `weight`/`stretch`
-// fill the other — so stretch keeps doing real work instead of every tile sitting fully static in
-// its own box.
+// so voids don't sync up with the size trend.
 //
 // Cards are a stand-in for real content (name + description + background image on each), so every
 // card carries a real minimum footprint (CARD_MIN) on both axes — no 1x1/2x1 slivers. Size varies
 // by discrete tiers (small/medium/large), not a +/-2 jitter, so patches actually read as different
-// scales instead of near-uniform noise. Void tiles are the opposite shape family: thin on one axis,
-// long on the other — a shape no card (min CARD_MIN on both axes) can ever take, so a void reads
-// unambiguously as intentional negative space cut in to move content into interesting places, not
-// "a smaller card". `fillComponent` renders into whatever the packer leaves over regardless, so
-// keeping void shapes in that same thin-and-long family keeps auto-filled holes visually coherent
-// with the intentional ones.
+// scales instead of near-uniform noise. Every card pins at most one axis strictly; `weight`/
+// `stretch` fill the other, and the *pinned* axis gets a small `stretchX`/`stretchY` allowance too
+// (see CARD_FLEX) so nothing sits fully rigid — that's what keeps leftover `fillComponent` space
+// down to genuinely unreachable corners instead of whole dead columns.
+//
+// Void tiles are the opposite shape family: thin and pinned on one axis (never as thick as a card),
+// left fully weight/stretch-driven on the other — so a void naturally grows to close whatever gap
+// it borders instead of leaving a sliver for `fillComponent` to plug. A void reads unambiguously as
+// intentional negative space cut in to move content into interesting places, not "a smaller card".
+//
+// Composition targets roughly 80% item / 15% void / 5% incidental filler by *area* (tracked via a
+// running tally, not a per-tile coin flip) — filler is never generated on purpose, it's just
+// whatever a real CSS-Grid pack can't reach even after stretch.
 import type { CaseTile } from "../lib/case";
 
 // ---- seeded hash: pseudo-random in [0,1) for an integer lattice point ----
@@ -48,18 +53,23 @@ const CARD_MIN = 2 * SCALE; // 8 — nothing thinner than this counts as a card 
 // discrete size tiers (small/medium/large), not a small jitter — this is what makes patches read
 // as genuinely different scales instead of near-uniform noise
 const CARD_TIERS = [2 * SCALE, 3 * SCALE, 5 * SCALE]; // 8, 12, 20
-const tierFor = (n: number) => CARD_TIERS[Math.floor(n * CARD_TIERS.length) % CARD_TIERS.length];
+const tierFor = (n: number) =>
+  CARD_TIERS[Math.floor(n * CARD_TIERS.length) % CARD_TIERS.length];
 
-// thin on one axis, long on the other — a shape a real card (min CARD_MIN on both axes) can never
-// take. Long axis stays under CARD_MIN so a void never reads "as thick as a card".
-const VOID_LONG = CARD_MIN - 1;
-const VOID_SHAPES: Array<Partial<Pick<CaseTile, "cols" | "rows" | "weight">>> = [
-  { cols: 1, rows: VOID_LONG },
-  { cols: VOID_LONG, rows: 1 },
-  { cols: 1, rows: round(VOID_LONG * 0.6) },
-  { cols: round(VOID_LONG * 0.6), rows: 1 },
-  { cols: 1, weight: VOID_LONG }, // "1 x auto" — thin, row axis left elastic
-];
+// how far a card's *pinned* axis may still flex (via GridItem's stretchX/stretchY) beyond its tier —
+// small on purpose: enough to close a stray 1-2 cell gap, not enough to blur the tier's identity
+const CARD_FLEX = Math.round(SCALE / 2) + 40; // 2
+
+// thin and pinned on one axis (never as thick as a card — CARD_MIN is the ceiling), fully
+// weight/stretch-driven on the other, so a void grows to close whatever gap it borders instead of
+// leaving a sliver for `fillComponent`. `weight` here is only the *initial* guess (see `spanFor`);
+// `stretch` (on by default) takes it the rest of the way.
+const VOID_THIN = 1;
+const VOID_WEIGHT_TIERS = [CARD_MIN, CARD_MIN + SCALE, CARD_MIN + 2 * SCALE]; // 8, 12, 16
+
+// composition target, tracked by running cell-area tally rather than a per-tile coin flip — filler
+// is never generated on purpose, it's whatever's left after stretch can't reach it
+const TARGET_VOID_AREA_FRAC = 0.15;
 
 export function generateOrganicTiles(seed = 1, count = 20): CaseTile[] {
   const sizeNoise = makeNoise(seed); // drifting "how big is this patch of tiles" trend
@@ -68,10 +78,37 @@ export function generateOrganicTiles(seed = 1, count = 20): CaseTile[] {
   const pick = makeNoise(seed + 303); // per-tile jitter/picks, not a trend
 
   const tiles: CaseTile[] = [];
+  let itemArea = 0;
+  let voidArea = 0;
   let sinceVoid = 0;
   let prevKey = "";
 
+  const areaOf = (t: Partial<Pick<CaseTile, "cols" | "rows" | "weight">>) =>
+    (t.cols ?? t.weight ?? 1) * (t.rows ?? t.weight ?? 1);
+
   for (let i = 0; i < count; i++) {
+    const urge = voidNoise(i / 3);
+    const voidFrac = voidArea / Math.max(1, itemArea + voidArea);
+    const wantsVoid =
+      voidFrac < TARGET_VOID_AREA_FRAC &&
+      ((sinceVoid >= 2 && urge > 0.45) || sinceVoid >= 5);
+
+    if (wantsVoid) {
+      const vertical = pick(i * 5.9) < 0.5;
+      const longWeight =
+        VOID_WEIGHT_TIERS[
+          Math.floor(pick(i * 6.7) * VOID_WEIGHT_TIERS.length) %
+            VOID_WEIGHT_TIERS.length
+        ];
+      const shape = vertical
+        ? { cols: VOID_THIN, weight: longWeight }
+        : { rows: VOID_THIN, weight: longWeight };
+      tiles.push({ kind: "void", ...shape });
+      voidArea += areaOf(shape);
+      sinceVoid = 0;
+      continue;
+    }
+
     const size = sizeNoise(i / 5); // patches ~5 tiles wide
     const mode = modeNoise(i / 7); // patches ~7 tiles wide, independent period
 
@@ -83,21 +120,45 @@ export function generateOrganicTiles(seed = 1, count = 20): CaseTile[] {
     // shape family
     const elasticSize = pick(i * 4.3 + 11);
 
-    let tile: Partial<Pick<CaseTile, "cols" | "rows" | "weight">>;
+    let tile: CaseTile;
     if (mode < 0.3) {
-      // fully strict — both axes pinned; the occasional deliberately-static tile
+      // fully strict — both axes pinned; the occasional deliberately-static tile. Still gets
+      // CARD_FLEX on both, so "strict" means "tier-sized", not "never moves a single cell".
       const wide = pick(i * 3.1) < 0.5;
       tile = wide
-        ? { cols: tierFor(size) + jitterCols, rows: tierFor(elasticSize) + jitterRows }
-        : { cols: tierFor(elasticSize) + jitterCols, rows: tierFor(size) + jitterRows };
+        ? {
+            kind: "item",
+            cols: tierFor(size) + jitterCols,
+            rows: tierFor(elasticSize) + jitterRows,
+            stretchX: CARD_FLEX,
+            stretchY: CARD_FLEX,
+          }
+        : {
+            kind: "item",
+            cols: tierFor(elasticSize) + jitterCols,
+            rows: tierFor(size) + jitterRows,
+            stretchX: CARD_FLEX,
+            stretchY: CARD_FLEX,
+          };
     } else if (mode < 0.65) {
       // col-pinned, row axis elastic — "2 x auto". `weight` is the *literal* initial span for the
       // unpinned axis (see `spanFor`), not a small flex ratio — needs its own CARD_MIN+ range, or
-      // the card starts out thinner than CARD_MIN and only `stretch` can fix it.
-      tile = { cols: tierFor(size) + jitterCols, weight: tierFor(elasticSize) + jitterRows };
+      // the card starts out thinner than CARD_MIN and only `stretch` can fix it. Row axis is already
+      // fully elastic (weight-driven); only the pinned col axis needs the extra `stretchX` nudge.
+      tile = {
+        kind: "item",
+        cols: tierFor(size) + jitterCols,
+        weight: tierFor(elasticSize) + jitterRows,
+        stretchX: CARD_FLEX,
+      };
     } else {
       // row-pinned, col axis elastic — "auto x 2"
-      tile = { rows: tierFor(size) + jitterRows, weight: tierFor(elasticSize) + jitterCols };
+      tile = {
+        kind: "item",
+        rows: tierFor(size) + jitterRows,
+        weight: tierFor(elasticSize) + jitterCols,
+        stretchY: CARD_FLEX,
+      };
     }
 
     // anti-repetition: never place two tiles with the identical footprint back to back — a real
@@ -109,25 +170,29 @@ export function generateOrganicTiles(seed = 1, count = 20): CaseTile[] {
     }
     prevKey = JSON.stringify(tile);
 
-    tiles.push({ kind: "item", ...tile });
+    tiles.push(tile);
+    itemArea += areaOf(tile);
     sinceVoid++;
-
-    const urge = voidNoise(i / 3);
-    if ((sinceVoid >= 2 && urge > 0.5) || sinceVoid >= 5) {
-      const shape = VOID_SHAPES[Math.floor(pick(i * 5.9) * VOID_SHAPES.length) % VOID_SHAPES.length];
-      tiles.push({ kind: "void", ...shape });
-      sinceVoid = 0;
-    }
   }
 
   for (const t of tiles) {
     const { cols, rows } = t;
     if (t.kind === "item") {
-      if ((cols !== undefined && cols < CARD_MIN) || (rows !== undefined && rows < CARD_MIN)) {
-        throw new Error(`generateOrganicTiles: card thinner than the ${CARD_MIN}-cell minimum: ${JSON.stringify(t)}`);
+      if (
+        (cols !== undefined && cols < CARD_MIN) ||
+        (rows !== undefined && rows < CARD_MIN)
+      ) {
+        throw new Error(
+          `generateOrganicTiles: card thinner than the ${CARD_MIN}-cell minimum: ${JSON.stringify(t)}`,
+        );
       }
-    } else if ((cols !== undefined && cols > CARD_MIN) || (rows !== undefined && rows > CARD_MIN)) {
-      throw new Error(`generateOrganicTiles: void tile as thick as a card: ${JSON.stringify(t)}`);
+    } else if (
+      (cols !== undefined && cols > CARD_MIN) ||
+      (rows !== undefined && rows > CARD_MIN)
+    ) {
+      throw new Error(
+        `generateOrganicTiles: void tile as thick as a card: ${JSON.stringify(t)}`,
+      );
     }
   }
 

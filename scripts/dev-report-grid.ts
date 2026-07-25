@@ -23,13 +23,13 @@ import { cases } from '../dev/src/cases';
 import type { Case, CaseTile } from '../dev/src/lib/case';
 import type { GridItemProps } from '../src/react';
 import {
-  elasticityOf,
   fillDeadZones,
   groupEmptyRects,
   type Placement,
   placeSpans,
   type Span,
   spanFor,
+  stretchCapsOf,
 } from '../src/utils';
 
 export type DeadZoneReport = {
@@ -110,7 +110,12 @@ export const analyzeItemsFilled = (
     cols,
     false,
   );
-  const filled = fillDeadZones(placements, items.map(elasticityOf), cols, rows, maxStretch);
+  const filled = fillDeadZones(
+    placements,
+    items.map((p) => stretchCapsOf(p, maxStretch)),
+    cols,
+    rows,
+  );
   return reportFromOccupancy(occupancyOf(filled, cols, rows), cols, rows);
 };
 
@@ -202,13 +207,10 @@ export const analyzeCase = (
   const { placements, rows: contentRows } = placeSpans(spans, cols, false);
   // `nrRows` is a floor, not a cap — see `src/react.tsx`'s `rowCount`. Mirror that here.
   const rows = Math.max(meta.nrRows ?? 0, contentRows);
-  const isElastic = items.map(elasticityOf);
-  const renderedOcc = occupancyOf(fillDeadZones(placements, isElastic, cols, rows, stretch), cols, rows);
-  const stretchedOcc = occupancyOf(
-    fillDeadZones(placements, isElastic, cols, rows, Number.POSITIVE_INFINITY),
-    cols,
-    rows,
-  );
+  const renderedCaps = items.map((p) => stretchCapsOf(p, stretch));
+  const uncappedCaps = items.map((p) => stretchCapsOf(p, Number.POSITIVE_INFINITY));
+  const renderedOcc = occupancyOf(fillDeadZones(placements, renderedCaps, cols, rows), cols, rows);
+  const stretchedOcc = occupancyOf(fillDeadZones(placements, uncappedCaps, cols, rows), cols, rows);
 
   const holes: CaseReport['holes'] = [];
   const mapLines: string[] = [];

@@ -108,32 +108,35 @@ export const placeSpans = (spans: Span[], nrCols: number, isPacked: boolean): Pl
 export const packedRowCount = (spans: Span[], nrCols: number, isPacked: boolean): number =>
   placeSpans(spans, nrCols, isPacked).rows;
 
-/** Per-axis elasticity: an axis may grow to absorb dead cells only when *that* axis came from
- * `weight`, not an explicit pin. `cols={2}` pins the column axis (never grows horizontally) but
- * leaves rows weight-driven (still grows vertically), and vice versa. Only an item with *both*
- * `cols` and `rows` pinned is fully strict. */
-export type Elasticity = { col: boolean; row: boolean };
+/** Per-axis growth cap: how many extra cells (beyond the original span) an item's axis may gain
+ * absorbing dead cells. `Infinity` = fill as far as possible, `0` = never grows. An axis driven by
+ * `weight` (no `cols`/`rows` pin) defaults to the grid's `stretch` prop; a pinned axis defaults to
+ * `0` — but `GridItem`'s own `stretch`/`stretchX`/`stretchY` can override either default, so a
+ * pinned axis can still flex a little, or an elastic one can be capped tighter than the grid default. */
+export type StretchCaps = { col: number; row: number };
 
-export const elasticityOf = (props: GridItemProps): Elasticity => ({
-  col: props.cols == null,
-  row: props.rows == null,
-});
+export const stretchCapsOf = (props: GridItemProps, gridStretch: number): StretchCaps => {
+  const colDefault = props.cols == null ? gridStretch : 0;
+  const rowDefault = props.rows == null ? gridStretch : 0;
+  return {
+    col: props.stretchX ?? props.stretch ?? colDefault,
+    row: props.stretchY ?? props.stretch ?? rowDefault,
+  };
+};
 
 /**
- * Grow elastic items/axes into adjacent dead cells so the span grid fills without reordering — the
- * "dead-zone-aware" pass on top of {@link placeSpans}. Growth is **fair**: each pass, every elastic
- * axis grows by at most one cell (first free direction: right, left, down, up), so slack is shared
- * round-robin instead of the first item eating it all. Repeats to a fixpoint. `maxStretch` caps how
- * many extra cells an item may gain *per axis* over its original span (`Infinity` = fill as far as
- * possible; `0` = no growth). Pinned axes (see {@link Elasticity}) never grow.
- * Returns a fresh placement array, same length/order as the input. Deterministic.
+ * Grow items into adjacent dead cells so the span grid fills without reordering — the
+ * "dead-zone-aware" pass on top of {@link placeSpans}. Growth is **fair**: each pass, every
+ * still-growable axis grows by at most one cell (first free direction: right, left, down, up), so
+ * slack is shared round-robin instead of the first item eating it all. Repeats to a fixpoint. `caps`
+ * (see {@link stretchCapsOf}) bounds how many extra cells each item may gain *per axis* over its
+ * original span. Returns a fresh placement array, same length/order as the input. Deterministic.
  */
 export const fillDeadZones = (
   placements: Placement[],
-  elastic: Elasticity[],
+  caps: StretchCaps[],
   nrCols: number,
   nrRows: number,
-  maxStretch = Number.POSITIVE_INFINITY,
 ): Placement[] => {
   const out = placements.map((p) => ({ ...p }));
   const orig = placements.map((p) => ({ colSpan: p.colSpan, rowSpan: p.rowSpan }));
@@ -164,8 +167,8 @@ export const fillDeadZones = (
     changed = false;
     for (let i = 0; i < out.length; i++) {
       const p = out[i];
-      const colRoom = elastic[i].col && p.colSpan - orig[i].colSpan < maxStretch;
-      const rowRoom = elastic[i].row && p.rowSpan - orig[i].rowSpan < maxStretch;
+      const colRoom = p.colSpan - orig[i].colSpan < caps[i].col;
+      const rowRoom = p.rowSpan - orig[i].rowSpan < caps[i].row;
       if (colRoom && colFree(p, p.colStart + p.colSpan)) {
         for (let r = p.rowStart; r < p.rowStart + p.rowSpan; r++) set(r, p.colStart + p.colSpan);
         p.colSpan++;

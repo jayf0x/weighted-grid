@@ -17,12 +17,12 @@ import {
 } from 'react';
 import {
   asGridItems,
-  elasticityOf,
   fillDeadZones,
   groupEmptyRects,
   packedRowCount,
   placeSpans,
   spanFor,
+  stretchCapsOf,
   toCss,
 } from './utils';
 
@@ -41,6 +41,16 @@ export type GridItemProps = PropsWithChildren<{
   /** Exact row span. Pins the vertical axis — it never stretches — while `weight` keeps driving
    * columns (still elastic, unless `cols` is also pinned). */
   rows?: number;
+  /** Extra cells this item may still grow, per axis, beyond `cols`/`rows`/`weight` — even on an axis
+   * `cols`/`rows` pinned (normally frozen at 0 growth). Sets both axes; `stretchX`/`stretchY`
+   * override per axis. Also works the other way: caps a `weight`-driven (normally fully elastic) axis
+   * below the `Grid`-level `stretch` default. Doesn't affect `weight`/`cols`/`rows` themselves, only
+   * how far `stretch` may grow the item afterward. */
+  stretch?: number;
+  /** Per-axis override of `stretch` for the column axis. */
+  stretchX?: number;
+  /** Per-axis override of `stretch` for the row axis. */
+  stretchY?: number;
 }>;
 
 export type GridProps = PropsWithChildren<{
@@ -204,10 +214,9 @@ export const Grid = memo((props: GridProps) => {
   const base = placeSpans(gridSpan, nrCols, false).placements;
   const placed = fillDeadZones(
     base,
-    items.map((it) => elasticityOf(it.props)),
+    items.map((it) => stretchCapsOf(it.props, stretch)),
     nrCols,
     rowCount,
-    stretch,
   );
 
   // Whatever's still empty after stretch, merged into unified rectangular blocks (one fillComponent
