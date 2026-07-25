@@ -39,10 +39,10 @@ export const App = () => {
         cols={nrCols}
         rows={nrCols}
         showGrid
-        stretch={0}
+        stretch={4}
         fillComponent={
           <div className="bg-[#f43e] w-full h-full" id="filler">
-            .
+            _
           </div>
         }
       >
