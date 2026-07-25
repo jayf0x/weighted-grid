@@ -1,5 +1,5 @@
 /**
- * Grid QA harness — dead-zone analyzer + dev/App.jsx report.
+ * Grid QA harness — dead-zone analyzer + per-case report for `dev/src/cases`.
  *
  * Runs against the placement *model* (`placeSpans`) rather than a real browser — no puppeteer, no
  * deps, deterministic, and importable straight into a test. The grid owns placement with explicit
@@ -7,14 +7,20 @@
  * pixel-for-pixel; there's nothing a `div[role=grid]` + `getBoundingClientRect()` walk in devtools
  * would tell you that this script doesn't already know, and this one runs without a browser.
  *
- * Run:   bun scripts/dev-report-grid.ts               # holes/stretch/filler-repeats for dev/src/App.jsx
- *        bun scripts/dev-report-grid.ts --cols=8      # override the column count
- *        bun scripts/dev-report-grid.ts --stretch=5   # override the stretch cap (matches the Grid prop)
- *        bun scripts/dev-report-grid.ts --showcase    # the old Showcase dead-zone report
- * Import: `analyzeDevGrid`/`formatDevReport` for the dev report, `analyzeSpans`/`formatReport` for
+ * Every dev case (`dev/src/cases/*.ts`) is plain data — a `Case` of `{ title, meta, tiles }`, no
+ * JSX — so this script imports the exact same array the dev app renders. There is one source of
+ * truth per case; nothing here can drift from what's on screen.
+ *
+ * Run:   bun scripts/dev-report-grid.ts               # every dev case
+ *        bun scripts/dev-report-grid.ts --case=1       # just dev/src/cases[1] ("the 2nd case")
+ *        bun scripts/dev-report-grid.ts --stretch=0    # override that case's `stretch` prop
+ *        bun scripts/dev-report-grid.ts --showcase     # the old Showcase dead-zone report
+ * Import: `analyzeCase`/`formatCaseReport` for a single case, `analyzeItems`/`formatReport` for
  * unit tests (see tests/dev-report-grid.test.ts).
  */
 
+import { cases } from '../dev/src/cases';
+import type { Case, CaseTile } from '../dev/src/lib/case';
 import type { GridItemProps } from '../src/react';
 import {
   elasticityOf,
@@ -150,41 +156,22 @@ export const showcaseItems = (count = 12): GridItemProps[] => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// dev/src/App.jsx config — a *verbatim* copy of `CARDS` in dev/src/App.jsx: weight-only items, items
-// with one axis pinned (`cols` xor `rows`), and items with both pinned (fully strict). Keep in sync.
+// dev/src/cases — the actual dev QA cases. `devItems()` stays as the flat GridItemProps view of
+// `dev/src/cases/1-default.ts` (`cases[0]`) for the pre-existing unit-test baselines below; every
+// case (including ones with `void` tiles, like the organic mosaic) goes through `analyzeCase`.
 // ─────────────────────────────────────────────────────────────────────────────
-export const devItems = (): GridItemProps[] => [
-  { weight: 1 },
-  { weight: 2 },
-  { weight: 3 },
-  { weight: 4 },
-  // fixed cols
-  { weight: 1, cols: 1 },
-  { weight: 2, cols: 1 },
-  { weight: 3, cols: 2 },
-  { weight: 4, cols: 2 },
-  // fixed rows
-  { weight: 1, rows: 1 },
-  { weight: 2, rows: 1 },
-  { weight: 3, rows: 2 },
-  { weight: 4, rows: 2 },
-  // fixed cols and rows — weight should not have any effect
-  { weight: 10, cols: 1, rows: 1 },
-  { weight: 20, cols: 1, rows: 1 },
-  { weight: 30, cols: 2, rows: 2 },
-  { weight: 40, cols: 2, rows: 2 },
-  // could be largest, depending on others
-  { weight: 4 },
-  // should be largest
-  { cols: 5, rows: 5 },
-];
+export const devItems = (): GridItemProps[] =>
+  cases[0].tiles.filter((t) => t.kind === 'item').map(({ kind, ...props }) => props);
 
 export type HoleKind = 'stuck' | 'missed-stretch';
 
-export type DevGridReport = {
+export type CaseReport = {
+  title: string;
   cols: number;
   rows: number;
-  /** ASCII map: `#`=item, `~`=hole a neighbor could've stretched into, `.`=hole nothing can reach. */
+  stretch: number;
+  tileCount: number;
+  /** ASCII map: `#`=item/void, `~`=hole a neighbor could've stretched into, `.`=hole nothing can reach. */
   map: string;
   holes: { row: number; col: number; kind: HoleKind }[];
   /** The actual `fillComponent` tiles the grid renders — holes merged into unified rectangular
@@ -192,35 +179,38 @@ export type DevGridReport = {
   fillerTiles: { row: number; col: number; rowSpan: number; colSpan: number }[];
 };
 
+const asGridItemProps = (tiles: CaseTile[]): GridItemProps[] => tiles.map(({ kind, ...props }) => props);
+
 /**
- * Reports on the App.jsx config as it's actually rendered: `stretch` (capped at `maxStretch`, matching
- * the live prop) runs first, then whatever's still empty is where `fillComponent` (the `id="filler"`
- * tile) lands. For every cell the *rendered* grid leaves empty, checks whether an uncapped
- * `fillDeadZones` (`maxStretch=Infinity`) would have closed it — that's a **missed-stretch** cell,
- * the spot to point an agent at when raising `stretch` would shrink filler-tile usage. What's left
- * over even at infinite stretch is **stuck** — no elastic neighbor can reach it (boxed in by other
- * holes, strict items, or the grid edge); `fillComponent` is the only thing that can plug it.
+ * Reports on one `Case` as it's actually rendered: `stretch` (from `meta.stretch`, default
+ * `Infinity` to match the `<Grid>` default) runs first, then whatever's still empty is where
+ * `fillComponent` lands. For every cell the *rendered* grid leaves empty, checks whether an
+ * uncapped `fillDeadZones` would have closed it — that's a **missed-stretch** cell, the spot to
+ * point an agent at when raising `stretch` would shrink filler-tile usage. What's left over even at
+ * infinite stretch is **stuck** — no elastic neighbor can reach it (boxed in by other holes, strict
+ * items, or the grid edge); `fillComponent` is the only thing that can plug it.
  */
-export const analyzeDevGrid = (
-  items: GridItemProps[] = devItems(),
-  cols = 10, // matches dev/src/App.jsx's nrCols
-  maxStretch = 4,
-  minRows = 0, // dev/src/App.jsx leaves nrRows unset (auto) — 0 is a no-op floor
-): DevGridReport => {
+export const analyzeCase = (
+  { title, meta, tiles }: Case,
+  overrides: { cols?: number; stretch?: number } = {},
+): CaseReport => {
+  const cols = overrides.cols ?? meta.nrCols ?? 7;
+  const stretch = overrides.stretch ?? meta.stretch ?? Number.POSITIVE_INFINITY;
+  const items = asGridItemProps(tiles);
+
   const spans = items.map((p) => spanFor(p, cols));
   const { placements, rows: contentRows } = placeSpans(spans, cols, false);
-  // `rows` is a floor, not a cap — see `src/react.tsx`'s `rowCount`. Mirror that here so this report
-  // stays accurate for configs where the declared `rows` is smaller than what content needs.
-  const rows = Math.max(minRows, contentRows);
+  // `nrRows` is a floor, not a cap — see `src/react.tsx`'s `rowCount`. Mirror that here.
+  const rows = Math.max(meta.nrRows ?? 0, contentRows);
   const isElastic = items.map(elasticityOf);
-  const renderedOcc = occupancyOf(fillDeadZones(placements, isElastic, cols, rows, maxStretch), cols, rows);
+  const renderedOcc = occupancyOf(fillDeadZones(placements, isElastic, cols, rows, stretch), cols, rows);
   const stretchedOcc = occupancyOf(
     fillDeadZones(placements, isElastic, cols, rows, Number.POSITIVE_INFINITY),
     cols,
     rows,
   );
 
-  const holes: DevGridReport['holes'] = [];
+  const holes: CaseReport['holes'] = [];
   const mapLines: string[] = [];
   for (let r = 0; r < rows; r++) {
     let line = '';
@@ -243,15 +233,32 @@ export const analyzeDevGrid = (
     colSpan: p.colSpan,
   }));
 
-  return { cols, rows, map: mapLines.join('\n'), holes, fillerTiles };
+  return { title, cols, rows, stretch, tileCount: tiles.length, map: mapLines.join('\n'), holes, fillerTiles };
 };
 
-export const formatDevReport = (report: DevGridReport, title = 'dev/App.jsx grid report'): string => {
-  const { cols, rows, map, holes, fillerTiles } = report;
+/** Back-compat shim over `analyzeCase` for the `devItems()`-shaped unit tests below — same 4-arg
+ * shape (`items, cols, maxStretch, minRows`) the tests already anchor on. */
+export const analyzeDevGrid = (
+  items: GridItemProps[] = devItems(),
+  cols = 10,
+  maxStretch = 4,
+  minRows = 0,
+): CaseReport =>
+  analyzeCase(
+    {
+      title: 'devItems',
+      meta: { nrCols: cols, stretch: maxStretch, nrRows: minRows },
+      tiles: items.map((p) => ({ kind: 'item', ...p })),
+    },
+    {},
+  );
+
+export const formatCaseReport = (report: CaseReport): string => {
+  const { title, cols, rows, stretch, tileCount, map, holes, fillerTiles } = report;
   const stuck = holes.filter((h) => h.kind === 'stuck');
   const missed = holes.filter((h) => h.kind === 'missed-stretch');
   const lines = [
-    `── ${title} (cols=${cols}, rows=${rows}) ──`,
+    `── ${title} (cols=${cols}, rows=${rows}, stretch=${stretch}, tiles=${tileCount}) ──`,
     map,
     `holes: ${holes.length}  stuck: ${stuck.length}  missed-stretch: ${missed.length}`,
   ];
@@ -265,11 +272,20 @@ export const formatDevReport = (report: DevGridReport, title = 'dev/App.jsx grid
   return lines.join('\n');
 };
 
+/** @deprecated kept only for the pre-existing unit-test baselines; use `formatCaseReport`. */
+export const formatDevReport = formatCaseReport;
+
 if (import.meta.main) {
+  const caseArg = process.argv.find((a) => a.startsWith('--case='));
   const colsArg = process.argv.find((a) => a.startsWith('--cols='));
+  const stretchArg = process.argv.find((a) => a.startsWith('--stretch='));
+  const overrides = {
+    cols: colsArg ? Number(colsArg.split('=')[1]) : undefined,
+    stretch: stretchArg ? Number(stretchArg.split('=')[1]) : undefined,
+  };
 
   if (process.argv.includes('--showcase')) {
-    const cols = colsArg ? Number(colsArg.split('=')[1]) : 12;
+    const cols = overrides.cols ?? 12;
     const items = showcaseItems();
     console.log(formatReport(analyzeItems(items, cols), `Showcase order-mode (raw)`));
     for (const cap of [1, 2, Number.POSITIVE_INFINITY]) {
@@ -277,9 +293,14 @@ if (import.meta.main) {
       console.log(formatReport(analyzeItemsFilled(items, cols, cap), `order-mode fill (stretch=${cap})`));
     }
   } else {
-    const stretchArg = process.argv.find((a) => a.startsWith('--stretch='));
-    const cols = colsArg ? Number(colsArg.split('=')[1]) : 10; // matches dev/src/App.jsx's nrCols
-    const maxStretch = stretchArg ? Number(stretchArg.split('=')[1]) : 4; // matches dev/src/App.jsx's stretch prop
-    console.log(formatDevReport(analyzeDevGrid(devItems(), cols, maxStretch)));
+    const selected = caseArg ? [cases[Number(caseArg.split('=')[1])]] : cases;
+    for (const [i, c] of selected.entries()) {
+      if (!c) {
+        console.error(`no such case: ${caseArg}`);
+        process.exit(1);
+      }
+      if (i > 0) console.log();
+      console.log(formatCaseReport(analyzeCase(c, overrides)));
+    }
   }
 }

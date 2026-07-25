@@ -90,18 +90,23 @@ bun run typecheck   # tsc --noEmit
 bun run build       # vite lib build → dist/ (index + react entries)
 bun run format      # biome check --write
 cd demo && bunx vite build   # verify the demo compiles
-bun scripts/dev-report-grid.ts   # QA: dev/App.jsx holes, missed-stretch cells, fillComponent tile count
+bun scripts/dev-report-grid.ts            # QA: every dev/src/cases entry — holes, missed-stretch, fillComponent tiles
+bun scripts/dev-report-grid.ts --case=1   # QA: just dev/src/cases[1] ("the 2nd case") — the "read this before judging a screenshot" report
+cd dev && bun run typecheck && bunx vite build   # verify the dev app typechecks and compiles
 scripts/link-local.sh        # build + copy dist/ into ../jayf0x.github.io/node_modules (local test)
 ```
 
 `scripts/dev-report-grid.ts` analyzes empty space in the span grid from the placement model
 (`placeSpans`) — no browser needed since the grid owns explicit placement, so this model equals
-what the DOM renders. `analyzeDevGrid`/`formatDevReport` report on the live `dev/src/App.jsx` config
-(holes, which ones `stretch` could've closed instead of ending up in a `fillComponent` tile, and the
-actual merged `fillComponent` tiles the grid would render); `devItems()` is a _verbatim_ copy of
-`dev/src/App.jsx`'s `CARDS` — keep them in sync when the dev app changes, or the report stops meaning
-anything. `analyzeSpans`/`analyzeItems`/`showcaseItems` (behind `--showcase`) are the older
-Showcase-specific report. Also importable for `tests/dev-report-grid.test.ts`.
+what the DOM renders. It imports `dev/src/cases` directly (`cases[i].meta`/`.tiles`, plain data, no
+JSX), so the report can never drift from what the dev app renders — there's exactly one definition
+of each case's setup. `analyzeCase`/`formatCaseReport` report on one `Case` (holes, which ones
+`stretch` could've closed instead of ending up in a `fillComponent` tile, and the actual merged
+`fillComponent` tiles the grid would render); pass `--case=N` to scope to one case, `--cols=`/
+`--stretch=` to override that case's `Grid` props. `analyzeSpans`/`analyzeItems`/`showcaseItems`
+(behind `--showcase`) are the older Showcase-specific report. `analyzeDevGrid`/`formatDevReport` are
+a back-compat shim over `analyzeCase` for the pre-existing `devItems()`-shaped unit tests. Also
+importable for `tests/dev-report-grid.test.ts`.
 
 ## Conventions
 
@@ -122,12 +127,28 @@ Showcase-specific report. Also importable for `tests/dev-report-grid.test.ts`.
 squarified treemap allocator. **No longer referenced by any shipping code**; safe to delete if the
 old modes aren't being restored from git.
 
-# dev/src/cases
+# dev/
 
-Each file here is one standalone test case: a self-contained component using `Grid`/`GridItem`
-from `weighted-grid/react`, wrapped in its own `<section>`. Use `bg-item` for real content and
-`bg-fill` for filler/void tiles — same theme colors (defined in `dev/src/style.css`) everywhere so
-examples stay visually comparable.
+Standalone TypeScript React (Vite) app, same setup as `demo/` (imports the library from source via
+the `weighted-grid`/`weighted-grid/react` aliases in `dev/vite.config.ts`, so it tracks local
+changes). Not part of the published package. `bun run dev` / `bun run build` / `bun run typecheck`
+from inside `dev/`. `@/*` is aliased to `dev/src/*` (see `vite.config.ts` + `tsconfig.json`).
 
-To add a case: create `MyCase.jsx` exporting a named component, then import + list it in
-`dev/src/App.jsx`'s `EXAMPLES` array. No shared state, no controls, no props — just render.
+- `dev/src/cases/*.ts` — every case is **plain data**, not JSX: a `Case` (`{ title, meta, tiles }`,
+  types in `dev/src/lib/case.ts`) where `meta` is the `<Grid>` props in effect and `tiles` is a list
+  of `{ kind: "item" | "void", ...GridItemProps }`. No component code, no rendering — this is the one
+  thing both the dev app *and* `scripts/dev-report-grid.ts` import, so there's no way for the visual
+  and the QA report to disagree about a case's setup. `dev/src/cases/index.ts` lists every case; add
+  one by pushing a new `Case` there. `dev/src/cases/organic.ts` is a generator producing tiles for
+  the organic-mosaic case, kept separate from its `Case` wrapper in `2-organic.ts`.
+- `dev/src/components/CaseSection.tsx` renders one `Case` — the single place that turns case data
+  into a `<Grid>`. `Item`/`Void`/`Filler`/`Title` are the shared per-tile visuals (`bg-item`/
+  `bg-void`/`bg-fill` — same theme colors, defined in `dev/src/style.css`, everywhere so cases stay
+  visually comparable). Every case renders through the same four components; a case should never
+  need its own bespoke tile markup — extend these instead.
+- `dev/src/App.tsx` maps `cases` to `<CaseSection>`, one per case, in order.
+
+To ask an agent "look at the 2nd case": `bun scripts/dev-report-grid.ts --case=1` gives the exact
+`Grid` props, tile count, and an ASCII occupancy map (holes vs. stretch-closable vs. stuck) without
+a browser; `dev/src/cases/2-organic.ts` (or whichever file) gives the exact props/data that produced
+it. Screenshot the running `dev` app (`bun run dev` inside `dev/`) for the visual.
