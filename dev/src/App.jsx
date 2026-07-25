@@ -35,14 +35,14 @@ export const App = () => {
       <Grid
         nrCols={10}
         // nrRows={160}
-        showGrid
+        // showGrid
         stretch={4}
         fillComponent={
           <div className="bg-[#f439] w-full h-full" id="filler">
             _
           </div>
         }
-        gap={10}
+        gap={0}
         // className="bg-amber-300"
       >
         {CARDS.map((args, i) => (

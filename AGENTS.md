@@ -44,10 +44,10 @@ different things in the same JSX block was a real, reported point of confusion; 
 - **`rowHeight`** — `"auto"` (default, split the parent height into row bands) or a px/string value
   (fixed per-row height, grid grows downward).
 - **`showGrid`** — a `repeating-linear-gradient` whose period is `track + gap` (both in one `calc()`,
-  so it works for any gap unit), transparent for the track and gap-colored for exactly one `gap`
-  width. Correct by construction: never drifts from the real gutter (unlike a naive `100% / n`
-  division), and never bleeds into a semi-transparent item's own interior (unlike painting the
-  container itself, which showed through translucent items).
+  so it works for any gap unit), transparent for the track and gap-colored for a fixed 1px line
+  centered in the gap. Correct by construction: never drifts from the real gutter (unlike a naive
+  `100% / n` division), and never bleeds into a semi-transparent item's own interior (unlike painting
+  the container itself, which showed through translucent items).
 - **`animateSize`/`animatePosition`** — opt-in FLIP transforms (`useFlip` in `src/react.tsx`) for
   smooth size/position transitions on re-layout. CSS Grid line/span values aren't natively
   interpolable, so this measures each item's box pre/post-render and plays the delta back as a

@@ -86,18 +86,23 @@ export const GridItem = (_: GridItemProps): null => null;
 
 // `showGrid`'s guide lines are drawn exactly where the real `gap` gutter is — a repeating gradient
 // whose period is `track + gap` (both track and gap expressed in the same `calc()`, so it works for
-// any gap unit, not just px). Each period is transparent for the track's own width, then the line
-// color for exactly one `gap`-width band. Unlike painting the container itself, this only ever
-// marks the gap band — it can't bleed grey into a semi-transparent item's own interior, and unlike a
-// naive `100% / n` division, the math includes `gap` so the band never drifts off the real gutter.
+// any gap unit, not just px). The line itself is a fixed 1px, centered in the gap — the rest of the
+// gap stays empty space either side of it. Unlike painting the container itself, this only ever
+// marks that 1px band; it can't bleed grey into a semi-transparent item's own interior, and unlike a
+// naive `100% / n` division, the math includes `gap` so the line never drifts off the real gutter.
 const gridLinesColor = 'rgba(128,128,128,.5)';
 
 const gridLinesStyle = (nrCols: number, rowCount: number, gapCss: string): CSSProperties => {
   const band = (count: number, direction: 'to right' | 'to bottom') => {
     if (count <= 1) return null;
     const track = `calc((100% - ${count - 1} * ${gapCss}) / ${count})`;
+    const lineStart = `calc(${track} + (${gapCss} - 1px) / 2)`;
+    const lineEnd = `calc(${lineStart} + 1px)`;
     const period = `calc(${track} + ${gapCss})`;
-    return `repeating-linear-gradient(${direction}, transparent 0, transparent ${track}, ${gridLinesColor} ${track}, ${gridLinesColor} ${period})`;
+    return (
+      `repeating-linear-gradient(${direction}, transparent 0, transparent ${lineStart}, ` +
+      `${gridLinesColor} ${lineStart}, ${gridLinesColor} ${lineEnd}, transparent ${lineEnd}, transparent ${period})`
+    );
   };
   const layers = [band(nrCols, 'to right'), band(rowCount, 'to bottom')].filter(Boolean);
   return layers.length ? { backgroundImage: layers.join(',') } : {};

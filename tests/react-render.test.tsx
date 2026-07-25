@@ -181,9 +181,14 @@ describe('Grid (SSR render)', () => {
       </Grid>,
     );
 
-    // Column period: track (100% minus 5 gaps over 6 cols) + one gap — never a flat `100% / 6`.
+    // Column period: track (100% minus 5 gaps over 6 cols), then a 1px line centered in the gap —
+    // never a flat `100% / 6`, and never the full gap width.
+    const track = 'calc((100% - 5 * 10px) / 6)';
+    const lineStart = `calc(${track} + (10px - 1px) / 2)`;
+    const lineEnd = `calc(${lineStart} + 1px)`;
     expect(on).toContain(
-      'repeating-linear-gradient(to right, transparent 0, transparent calc((100% - 5 * 10px) / 6), rgba(128,128,128,.5) calc((100% - 5 * 10px) / 6), rgba(128,128,128,.5) calc(calc((100% - 5 * 10px) / 6) + 10px))',
+      `repeating-linear-gradient(to right, transparent 0, transparent ${lineStart}, ` +
+        `rgba(128,128,128,.5) ${lineStart}, rgba(128,128,128,.5) ${lineEnd}, transparent ${lineEnd}, transparent calc(${track} + 10px))`,
     );
     expect(on).toContain('repeating-linear-gradient(to bottom,');
     // Not a flat fill — must not appear anywhere in the item's own cell interior.
