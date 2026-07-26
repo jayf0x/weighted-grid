@@ -91,7 +91,15 @@ describe('fillDeadZones — fair round-robin growth', () => {
   });
 
   test('a numeric cap limits growth per axis', () => {
-    const out = fillDeadZones([at(0), at(4)], [{ col: 1, row: 1 }, { col: 1, row: 1 }], 5, 1);
+    const out = fillDeadZones(
+      [at(0), at(4)],
+      [
+        { col: 1, row: 1 },
+        { col: 1, row: 1 },
+      ],
+      5,
+      1,
+    );
     // Each may gain at most 1 cell → A 2 wide, B 2 wide, one column stays dead.
     expect(out.map((p) => p.colSpan)).toEqual([2, 2]);
   });

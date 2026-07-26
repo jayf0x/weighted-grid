@@ -144,11 +144,14 @@ describe('Grid (SSR render)', () => {
     expect((html.match(/VOID/g) ?? []).length).toBe(1);
   });
 
-  test('fillComponent as a function receives each gap\'s own placement', () => {
+  test("fillComponent as a function receives each gap's own placement", () => {
     const html = renderToStaticMarkup(
-      <Grid nrCols={4} nrRows={2} stretch={1} fillComponent={({ row, col, rowSpan, colSpan }) => (
-        <i>{`${row},${col},${rowSpan}x${colSpan}`}</i>
-      )}>
+      <Grid
+        nrCols={4}
+        nrRows={2}
+        stretch={1}
+        fillComponent={({ row, col, rowSpan, colSpan }) => <i>{`${row},${col},${rowSpan}x${colSpan}`}</i>}
+      >
         <GridItem weight={1}>a</GridItem>
       </Grid>,
     );
