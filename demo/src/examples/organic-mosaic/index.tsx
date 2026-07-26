@@ -2,13 +2,14 @@ import { Grid, GridItem } from 'weighted-grid/react';
 import type { InfoMode } from '@/typing';
 import { Filler } from '@/components/Filler';
 import { Void } from '@/components/Void';
+// Dev-only: see ExampleSection.tsx for why this reaches past the public entry points.
+import { stretchCapsOf } from '../../../../src/utils';
 import { generateOrganicTiles } from './generator';
 import { imageFor } from './images';
 
 const SEED = 42;
 const NR_COLS = 48;
 
-const TITLE = `organic mosaic — seed ${SEED}`;
 const META = { nrCols: NR_COLS, rowHeight: 12, gap: 4, stretch: 8 } as const;
 const TILES = generateOrganicTiles(SEED, 40, NR_COLS);
 
@@ -29,24 +30,22 @@ const Card = ({ index }: { index: number }) => (
   </div>
 );
 
-/** "Organic" example last, in full fashion: real (well, real-looking) content, no controls — the
- * one place `weighted-grid` is shown against a mosaic that could plausibly be a real card grid
- * rather than a QA fixture. Ported from dev's `2-organic.ts` + `organic.ts` generator. Static —
- * generated once at module scope, not per render. */
+/** "Exotic Example" — real (well, real-looking) content, no controls, no QA labeling (seed/tile
+ * count are implementation detail nobody browsing the demo cares about). Ported from dev's
+ * `2-organic.ts` + `organic.ts` generator. Static — generated once at module scope, not per
+ * render. Sized big — this is the "full fashion" showcase, last in the stacked shell. */
 export function OrganicMosaicExample({ infoMode }: { infoMode: InfoMode }) {
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-[13px] font-medium uppercase tracking-[0.08em] text-ink/45">
-        {TITLE} <span className="font-mono text-[11px] normal-case tracking-normal text-ink/30">({TILES.length} tiles)</span>
-      </h2>
-      <div className="h-[520px] w-full overflow-auto rounded-lg border border-line bg-panel p-1.5">
+      <h2 className="text-[13px] font-medium uppercase tracking-[0.08em] text-ink/45">Exotic Example</h2>
+      <div className="h-[900px] w-full overflow-auto rounded-lg border border-line bg-panel p-1.5">
         <Grid {...META} fillComponent={(rect) => <Filler {...rect} />} className="h-full w-full">
           {TILES.map(({ kind, ...spanProps }, i) => (
             <GridItem key={i} {...spanProps}>
               {kind === 'void' ? (
                 <Void
                   index={i}
-                  caps={{ col: Number.POSITIVE_INFINITY, row: Number.POSITIVE_INFINITY }}
+                  caps={stretchCapsOf(spanProps, META.stretch)}
                   infoMode={infoMode}
                   {...spanProps}
                 />
