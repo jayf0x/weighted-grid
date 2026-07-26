@@ -70,7 +70,8 @@ Strict source order is always preserved; placement is deterministic.
 - `src/index.ts` — package entry; re-exports `Grid`/`GridItem` + types from `./react`.
 - `tests/` — `react-render.test.tsx` (SSR output), `span-for.test.ts` (span math + `fillDeadZones`
   fairness/caps), `dev-report-grid.test.ts` (QA baselines via `scripts/dev-report-grid.ts`).
-- `demo/` — standalone React (Vite) app importing the library from source. Not part of the package.
+- `demo/` — the released React+TypeScript (Vite) app, importing the library from source. Not part of
+  the published package. See the `demo/` section below.
 
 ## History / restoring the old modes
 
@@ -89,24 +90,25 @@ bun test            # run all tests (bun:test)
 bun run typecheck   # tsc --noEmit
 bun run build       # vite lib build → dist/ (index + react entries)
 bun run format      # biome check --write
-cd demo && bunx vite build   # verify the demo compiles
-bun scripts/dev-report-grid.ts            # QA: every dev/src/cases entry — holes, missed-stretch, fillComponent tiles
-bun scripts/dev-report-grid.ts --case=1   # QA: just dev/src/cases[1] ("the 2nd case") — the "read this before judging a screenshot" report
-cd dev && bun run typecheck && bunx vite build   # verify the dev app typechecks and compiles
+cd demo && bun run typecheck && bunx vite build   # verify the demo typechecks and compiles
+bun scripts/dev-report-grid.ts            # QA: every demo/src/examples static entry — holes, missed-stretch, fillComponent tiles
+bun scripts/dev-report-grid.ts --case=1   # QA: just examples[1] ("the 2nd example") — the "read this before judging a screenshot" report
+cd dev && bun run typecheck && bunx vite build   # original reference app, superseded by demo/ — still runnable
 scripts/link-local.sh        # build + copy dist/ into ../jayf0x.github.io/node_modules (local test)
 ```
 
 `scripts/dev-report-grid.ts` analyzes empty space in the span grid from the placement model
 (`placeSpans`) — no browser needed since the grid owns explicit placement, so this model equals
-what the DOM renders. It imports `dev/src/cases` directly (`cases[i].meta`/`.tiles`, plain data, no
-JSX), so the report can never drift from what the dev app renders — there's exactly one definition
-of each case's setup. `analyzeCase`/`formatCaseReport` report on one `Case` (holes, which ones
-`stretch` could've closed instead of ending up in a `fillComponent` tile, and the actual merged
-`fillComponent` tiles the grid would render); pass `--case=N` to scope to one case, `--cols=`/
-`--stretch=` to override that case's `Grid` props. `analyzeSpans`/`analyzeItems`/`showcaseItems`
-(behind `--showcase`) are the older Showcase-specific report. `analyzeDevGrid`/`formatDevReport` are
-a back-compat shim over `analyzeCase` for the pre-existing `devItems()`-shaped unit tests. Also
-importable for `tests/dev-report-grid.test.ts`.
+what the DOM renders. It imports `demo/src/examples` directly (`Example[]` entries, filtered to the
+`kind: 'data'` ones — plain data, no JSX), so the report can never drift from what the demo app
+renders — there's exactly one definition of each static example's setup. `analyzeCase`/
+`formatCaseReport` report on one `Example` (holes, which ones `stretch` could've closed instead of
+ending up in a `fillComponent` tile, and the actual merged `fillComponent` tiles the grid would
+render); pass `--case=N` to scope to one example, `--cols=`/`--stretch=` to override that example's
+`Grid` props. `analyzeSpans`/`analyzeItems`/`showcaseItems` (behind `--showcase`) are the older
+Showcase-specific report. `analyzeDevGrid`/`formatDevReport` are a back-compat shim over
+`analyzeCase` for the pre-existing `devItems()`-shaped unit tests. Also importable for
+`tests/dev-report-grid.test.ts`.
 
 ## Conventions
 
@@ -127,28 +129,49 @@ importable for `tests/dev-report-grid.test.ts`.
 squarified treemap allocator. **No longer referenced by any shipping code**; safe to delete if the
 old modes aren't being restored from git.
 
+# demo/
+
+The released React+TypeScript (Vite) app (`.github/workflows/demo-pages.yml` deploys it to GitHub
+Pages; `scripts/deploy-pages.sh`; README's "Live demo" badge). Imports the library from source via
+the `weighted-grid`/`weighted-grid/react` aliases in `demo/vite.config.ts`, so it tracks local
+changes. Not part of the published package. `bun run dev` / `bun run build` / `bun run typecheck`
+from inside `demo/`. `@/*` is aliased to `demo/src/*` (see `vite.config.ts` + `tsconfig.json`).
+
+- `demo/src/examples/*` — one folder per example, added by pushing an entry onto
+  `demo/src/examples/index.ts`'s ordered `ExampleEntry[]` list — the single array both the app shell
+  (`App.tsx`) and `scripts/dev-report-grid.ts` import, so there's no way for the visual and the QA
+  report to disagree about an example's setup. Two shapes, both count as "an example":
+  - **Static data** (`prop-matrix/`, `pinned-spans/`): an `Example` (`{ title, meta, tiles }`, types
+    in `demo/src/typing.ts`) where `meta` is the `<Grid>` props in effect and `tiles` is a list of
+    `{ kind: "item" | "void", ...GridItemProps }`. No component code — rendered by the shared
+    `ExampleSection`.
+  - **Interactive component** (`row-height/`, the *one* example allowed to be stateful — see the
+    merge plan's "interactivity gap"; don't generalize a `controls` descriptor onto `Example` for
+    it) and `organic-mosaic/` (real-looking card tiles from `demo/public/organic/`, generated by
+    `organic-mosaic/generator.ts`, no controls) — both export a component instead of data.
+  `scripts/dev-report-grid.ts` only analyzes the `kind: 'data'` entries; `prop-matrix` is index 0 and
+  carries the same tile data the old `dev/src/cases` default case did, so its QA baselines are
+  unchanged.
+- `demo/src/components/` — shared per-tile visuals (`Item`/`Void`/`Filler`/`Title`), the info toggle
+  (`Header`), and `ExampleSection` (turns one static `Example` into a `<Grid>`). `Item`/`Void` take
+  an `infoMode: "simple" | "dev"` prop, lifted in `App.tsx` from a single global toggle — "how much
+  QA detail am I looking at right now" is one axis for the whole page, not a per-example setting.
+  Every static example renders through the same components; an example should never need its own
+  bespoke tile markup — extend these instead.
+- `demo/src/App.tsx` maps `examples` to sections, one per entry, in order.
+
+To ask an agent "look at the 2nd example": `bun scripts/dev-report-grid.ts --case=1` gives the exact
+`Grid` props, tile count, and an ASCII occupancy map (holes vs. stretch-closable vs. stuck) without
+a browser; `demo/src/examples/<name>/index.ts(x)` gives the exact props/data that produced it.
+Screenshot the running app (`bun run dev` inside `demo/`) for the visual.
+
 # dev/
 
-Standalone TypeScript React (Vite) app, same setup as `demo/` (imports the library from source via
-the `weighted-grid`/`weighted-grid/react` aliases in `dev/vite.config.ts`, so it tracks local
-changes). Not part of the published package. `bun run dev` / `bun run build` / `bun run typecheck`
-from inside `dev/`. `@/*` is aliased to `dev/src/*` (see `vite.config.ts` + `tsconfig.json`).
-
-- `dev/src/cases/*.ts` — every case is **plain data**, not JSX: a `Case` (`{ title, meta, tiles }`,
-  types in `dev/src/lib/case.ts`) where `meta` is the `<Grid>` props in effect and `tiles` is a list
-  of `{ kind: "item" | "void", ...GridItemProps }`. No component code, no rendering — this is the one
-  thing both the dev app *and* `scripts/dev-report-grid.ts` import, so there's no way for the visual
-  and the QA report to disagree about a case's setup. `dev/src/cases/index.ts` lists every case; add
-  one by pushing a new `Case` there. `dev/src/cases/organic.ts` is a generator producing tiles for
-  the organic-mosaic case, kept separate from its `Case` wrapper in `2-organic.ts`.
-- `dev/src/components/CaseSection.tsx` renders one `Case` — the single place that turns case data
-  into a `<Grid>`. `Item`/`Void`/`Filler`/`Title` are the shared per-tile visuals (`bg-item`/
-  `bg-void`/`bg-fill` — same theme colors, defined in `dev/src/style.css`, everywhere so cases stay
-  visually comparable). Every case renders through the same four components; a case should never
-  need its own bespoke tile markup — extend these instead.
-- `dev/src/App.tsx` maps `cases` to `<CaseSection>`, one per case, in order.
-
-To ask an agent "look at the 2nd case": `bun scripts/dev-report-grid.ts --case=1` gives the exact
-`Grid` props, tile count, and an ASCII occupancy map (holes vs. stretch-closable vs. stuck) without
-a browser; `dev/src/cases/2-organic.ts` (or whichever file) gives the exact props/data that produced
-it. Screenshot the running `dev` app (`bun run dev` inside `dev/`) for the visual.
+Original reference/QA app, **superseded by `demo/`** (which absorbed its `Case`-as-plain-data
+convention, `Item`/`Void`/`Filler`/`Title` components, and `scripts/dev-report-grid.ts` QA tooling —
+see the `demo/` section above). Left on disk untouched as reference/history, not deleted, not wired
+into `scripts/dev-report-grid.ts` anymore. Standalone TypeScript React (Vite) app; `bun run dev` /
+`bun run build` / `bun run typecheck` from inside `dev/` still work. `dev/src/cases/*.ts` (a `Case`
+of `{ title, meta, tiles }`, types in `dev/src/lib/case.ts`) and `dev/src/components/CaseSection.tsx`
+are the originals `demo/src/examples`/`demo/src/typing.ts`/`demo/src/components/ExampleSection.tsx`
+were ported from.

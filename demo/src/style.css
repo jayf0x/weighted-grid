@@ -14,6 +14,57 @@
 
 :root {
   color-scheme: light;
+  /* theme swatch for Void.jsx's hatch pattern */
+  --pattern-fg: color-mix(in oklab, var(--color-ink) 8%, transparent);
+}
+
+/* Animate the conic-gradient start angle as a typed property. Ported from
+   jayf0x.github.io's info-popover "ip-snake" border, re-themed off this site's own
+   --color-accent/--color-line instead of the source's dedicated accent-dim/glow tokens. */
+@property --snake-a {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* Single snake that travels around an element's border: conic-gradient (the light) + mask
+   punch-out (shows only the border ring, hides the center). Apply to a `position: relative`
+   ancestor with `border-radius` set; this layer fills it via `inset: 0`. */
+.ip-snake {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+
+  background: conic-gradient(
+    from var(--snake-a),
+    transparent 0%,
+    transparent 72%,
+    color-mix(in srgb, var(--color-accent) 3%, transparent) 77%,
+    color-mix(in srgb, var(--color-accent) 12%, transparent) 83%,
+    color-mix(in srgb, var(--color-accent) 32%, transparent) 88%,
+    color-mix(in srgb, var(--color-accent) 60%, transparent) 92%,
+    color-mix(in srgb, var(--color-accent) 82%, transparent) 95%,
+    color-mix(in srgb, var(--color-accent) 95%, transparent) 97%,
+    color-mix(in srgb, var(--color-accent) 50%, transparent) 98%,
+    color-mix(in srgb, var(--color-accent) 15%, transparent) 99%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(var(--color-line) 0 0) content-box,
+    linear-gradient(var(--color-line) 0 0);
+  -webkit-mask-composite: destination-out;
+  mask-composite: exclude;
+  padding: 1.5px;
+
+  animation: ip-snake 6s linear infinite;
+}
+
+@keyframes ip-snake {
+  to {
+    --snake-a: 360deg;
+  }
 }
 
 html,

@@ -6,17 +6,16 @@
     "jsx": "react-jsx",
     "lib": ["ES2020", "DOM"],
     "strict": true,
-    "declaration": true,
-    "esModuleInterop": true,
+    "noEmit": true,
     "skipLibCheck": true,
+    "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["bun-types"],
     "baseUrl": ".",
     "paths": {
-      "weighted-grid/react": ["./src/react.tsx"],
-      "weighted-grid": ["./src/index.ts"],
-      "@/*": ["./demo/src/*"]
+      "@/*": ["./src/*"],
+      "weighted-grid/react": ["../src/react.tsx"],
+      "weighted-grid": ["../src/index.ts"]
     }
   },
-  "include": ["src", "tests", "scripts", "demo/src"]
+  "include": ["src"]
 }

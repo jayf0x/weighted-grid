@@ -93,7 +93,8 @@ bun run test          # bun test
 bun run typecheck
 bun run build         # vite → dist/ (ESM + CJS + .d.ts)
 bun run format        # biome check --write
-bun run dev:dev       # local playground app (dev/)
+bun run demo:dev      # the demo app (demo/) — examples, controls, QA info toggle
+bun run dev:dev       # original reference/QA playground (dev/), superseded by demo/
 ```
 
 ## License

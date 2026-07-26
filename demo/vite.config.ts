@@ -25,6 +25,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: [
+      { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
       { find: 'weighted-grid/react', replacement: weightedGridReact },
       { find: 'weighted-grid', replacement: weightedGrid },
       { find: /^react\/jsx-runtime$/, replacement: jsxRuntime },
