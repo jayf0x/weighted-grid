@@ -144,6 +144,19 @@ describe('Grid (SSR render)', () => {
     expect((html.match(/VOID/g) ?? []).length).toBe(1);
   });
 
+  test('fillComponent as a function receives each gap\'s own placement', () => {
+    const html = renderToStaticMarkup(
+      <Grid nrCols={4} nrRows={2} stretch={1} fillComponent={({ row, col, rowSpan, colSpan }) => (
+        <i>{`${row},${col},${rowSpan}x${colSpan}`}</i>
+      )}>
+        <GridItem weight={1}>a</GridItem>
+      </Grid>,
+    );
+    // Same gap as the previous test (one 2×2 block at row 0, col 2) — the function gets told exactly
+    // that, instead of rendering the same static node into every gap.
+    expect(html).toContain('0,2,2x2');
+  });
+
   test('rows always draws row tracks — rowHeight="auto" splits, fixed rowHeight reserves', () => {
     const auto = renderToStaticMarkup(
       <Grid nrCols={4} nrRows={3}>

@@ -57,21 +57,33 @@ const tierFor = (n: number) =>
   CARD_TIERS[Math.floor(n * CARD_TIERS.length) % CARD_TIERS.length];
 
 // how far a card's *pinned* axis may still flex (via GridItem's stretchX/stretchY) beyond its tier —
-// small on purpose: enough to close a stray 1-2 cell gap, not enough to blur the tier's identity
-const CARD_FLEX = Math.round(SCALE / 2) + 40; // 2
+// small on purpose: enough to close a stray 1-2 cell gap, not enough to blur the tier's identity.
+// Note: this only tops up the *pinned* axis. The already-weight-driven axis (and every void axis)
+// is governed by the `Grid`-level `stretch` prop instead (`meta.stretch` in the case file) — that's
+// the single lever for "how far can anything reach", items and voids alike.
+const CARD_FLEX = Math.round(SCALE / 2) + 20; // 2
 
 // thin and pinned on one axis (never as thick as a card — CARD_MIN is the ceiling), fully
 // weight/stretch-driven on the other, so a void grows to close whatever gap it borders instead of
 // leaving a sliver for `fillComponent`. `weight` here is only the *initial* guess (see `spanFor`);
-// `stretch` (on by default) takes it the rest of the way.
-const VOID_THIN = 1;
+// `stretch` (on by default) takes it the rest of the way. Thin-axis thickness scales with `nrCols` —
+// a 1-cell sliver reads fine on a 10-col reference grid but disappears on a 48-col one; ponytail:
+// scaled off `nrCols` alone (the one grid dimension known before generation — real row count is
+// emergent from placement), clamped to [2,3] so a void still never approaches CARD_MIN.
+const voidThinFor = (nrCols: number) =>
+  Math.max(2, Math.min(3, Math.round(nrCols / 16)));
 const VOID_WEIGHT_TIERS = [CARD_MIN, CARD_MIN + SCALE, CARD_MIN + 2 * SCALE]; // 8, 12, 16
 
 // composition target, tracked by running cell-area tally rather than a per-tile coin flip — filler
 // is never generated on purpose, it's whatever's left after stretch can't reach it
 const TARGET_VOID_AREA_FRAC = 0.15;
 
-export function generateOrganicTiles(seed = 1, count = 20): CaseTile[] {
+export function generateOrganicTiles(
+  seed = 1,
+  count = 20,
+  nrCols = 30,
+): CaseTile[] {
+  const voidThin = voidThinFor(nrCols);
   const sizeNoise = makeNoise(seed); // drifting "how big is this patch of tiles" trend
   const modeNoise = makeNoise(seed + 101); // drifting "which axis stays pinned" trend
   const voidNoise = makeNoise(seed + 202); // independent — voids shouldn't sync with the size trend
@@ -101,8 +113,8 @@ export function generateOrganicTiles(seed = 1, count = 20): CaseTile[] {
             VOID_WEIGHT_TIERS.length
         ];
       const shape = vertical
-        ? { cols: VOID_THIN, weight: longWeight }
-        : { rows: VOID_THIN, weight: longWeight };
+        ? { cols: voidThin, weight: longWeight }
+        : { rows: voidThin, weight: longWeight };
       tiles.push({ kind: "void", ...shape });
       voidArea += areaOf(shape);
       sinceVoid = 0;

@@ -73,8 +73,11 @@ export type GridProps = PropsWithChildren<{
    * all to one. Runs first, regardless of `fillComponent`. */
   stretch?: number;
   /** Rendered in whatever's left over after `stretch` — the cells no elastic neighbor could reach.
-   * Doesn't disable stretching; it plugs the remainder. Default: undefined (those cells stay empty). */
-  fillComponent?: ReactNode;
+   * Doesn't disable stretching; it plugs the remainder. A plain `ReactNode` renders the same node in
+   * every gap; pass a function to receive each gap's own placement (post-merge, see
+   * {@link groupEmptyRects}) — e.g. for a debug label or a size-aware filler. Default: undefined
+   * (those cells stay empty). */
+  fillComponent?: ReactNode | ((rect: { row: number; col: number; rowSpan: number; colSpan: number }) => ReactNode);
   /** Debug overlay: draws a guide line exactly on the real `gap` gutter between items (a gradient
    * whose period accounts for `gap`, not a simulated line that can drift out of sync with it). */
   showGrid?: boolean;
@@ -278,7 +281,9 @@ export const Grid = memo((props: GridProps) => {
             gridRow: `${p.rowStart + 1} / span ${p.rowSpan}`,
           }}
         >
-          {fillComponent}
+          {typeof fillComponent === 'function'
+            ? fillComponent({ row: p.rowStart, col: p.colStart, rowSpan: p.rowSpan, colSpan: p.colSpan })
+            : fillComponent}
         </div>
       ))}
     </div>
