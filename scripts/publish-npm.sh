@@ -27,8 +27,12 @@ if git rev-parse "$TAG" >/dev/null 2>&1; then
   echo "✗ Tag $TAG already exists — was a previous publish interrupted?"
   exit 1
 fi
-
 echo "Bumped to $NEW"
+
+# ── release notes (CHANGELOG.md + README's "What's new" table) ────────────────
+# Summarizes the commits since the last tag via `claude -p`; never fatal, and the commit below
+# picks the changes up either way.
+bun "$(dirname "$0")/release-notes.ts" "$NEW" || echo "! release notes step failed — continuing"
 
 # ── commit + tag + push (GHA workflow handles npm publish) ────────────────────
 git add .
@@ -39,3 +43,5 @@ git push origin "$TAG"
 
 echo ""
 echo "✓ Tagged $TAG — GitHub Actions will publish to npm"
+
+

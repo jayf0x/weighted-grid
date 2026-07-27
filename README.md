@@ -3,53 +3,64 @@
 <!-- README_HEAD:START -->
 
 [![npm version](https://img.shields.io/npm/v/weighted-grid)](https://www.npmjs.com/package/weighted-grid)
-[![license](https://img.shields.io/npm/l/weighted-grid)](./LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](./tsconfig.json)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/weighted-grid?label=minzipped)](https://bundlephobia.com/package/weighted-grid)
+[![zero deps](https://img.shields.io/badge/dependencies-0-brightgreen)](./package.json)
+[![types](https://img.shields.io/npm/types/weighted-grid)](./src/react.tsx)
 [![CI](https://github.com/jayf0x/weighted-grid/actions/workflows/ci.yml/badge.svg)](https://github.com/jayf0x/weighted-grid/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/weighted-grid)](./LICENSE)
 
 <!-- README_HEAD:END -->
 
-**Weight in, layout out.** Define a `weight` or pin an axis with `cols`/`rows` and
-the grid fills its container — fairly stretching elastic items into empty space, never leaving a
-hole an item could've grown into. No coordinates, no manual math.
-Native CSS Grid under the hood; the JS only computes placement 🚀
+**Weight in, layout out.** 🧩
+
+Say how _big_ each item should feel — not where it goes. The grid places everything in source
+order, fills its container, and grows elastic items into leftover space so you don't end up
+staring at a hole an item could have filled. Native CSS Grid does the rendering; the JS only
+decides spans.
 
 ![Preview](./assets/preview.png)
 
-**[▶ Live demo](https://jayf0x.github.io/weighted-grid/)** · ⭐ [Star the repo](https://github.com/jayf0x/weighted-grid) if it's useful
+**[▶ Play with the live demo](https://jayf0x.github.io/weighted-grid/)**
 
-## Why this, not X
+> ⭐ Star the [repo](https://github.com/jayf0x/weighted-grid) if this saved you an afternoon.
 
-|              | weighted-grid                                               | CSS Grid `auto-flow` alone                        | `react-grid-layout`                           |
-| ------------ | ----------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------- |
-| Sizing model | relative `weight`, per-axis pinning                         | fixed spans you compute by hand                   | fixed `x/y/w/h` per item                      |
-| Empty space  | fair `stretch` into gaps, then `fillComponent` for the rest | stays empty, or you write the fill logic yourself | stays empty                                   |
-| Setup        | drop in children, tag a few                                 | write every item's grid-column/row by hand        | wire up a layout array + drag/resize handlers |
-| Use case     | content-agnostic dashboards, feeds, galleries               | anything you're happy to hand-place               | user-editable, draggable dashboards           |
-| Deps         | zero (react peer)                                           | zero                                              | react + interact.js-style drag internals      |
+## Why not just CSS Grid?
 
-> <small> Want drag support or other features? Create [an issue](https://github.com/jayf0x/weighted-grid/issues/new).</small>
+|                | weighted-grid                                     | plain CSS Grid `auto-flow`         | `react-grid-layout`             |
+| -------------- | ------------------------------------------------- | ---------------------------------- | ------------------------------- |
+| You specify    | relative importance                               | every span, by hand                | `x/y/w/h` per item              |
+| Empty space    | absorbed fairly, then filled                      | stays empty                        | stays empty                     |
+| Setup          | drop in children, tag a few                       | write the placement yourself       | layout array + drag handlers    |
+| Best for       | dashboards, feeds, galleries, unknown item counts | layouts you're happy to hand-place | user-editable draggable boards  |
+| Runtime deps   | zero (`react` is a peer)                          | zero                               | react + drag internals          |
 
-## Features
+Use plain CSS Grid when you know the layout up front. Reach for this when the item count is
+whatever the API returned and you still want it to look deliberate. Not a drag-and-drop library,
+and not trying to be — want that? [Open an issue](https://github.com/jayf0x/weighted-grid/issues/new).
 
-- **`weight`** sizes items flexbox-`flex`-style; pin one axis with `cols`/`rows` and `weight`
-  fills the other, or pin neither and `weight` drives both (equal weights → equal squares)
-- Elastic items **`stretch`** into empty space fairly — split evenly between the items flanking a
-  gap, never all to one side — with an optional `fillComponent` to plug whatever's left over
-  merged into unified tiles, not one per cell
-- Optional `animateSize`/`animatePosition` for smooth transitions when layout changes
-- Full TypeScript types, ESM + CJS builds, zero runtime dependencies (`react` is a peer)
+## What's new
+
+<!-- WHATSNEW:START -->
+
+| Version | Highlights |
+| ------- | ---------- |
+| `1.5.0` | 🎨 **Presets** — `masonPreset` / `organicPreset` on the `weighted-grid/presets` subpath |
+| `1.4.0` | Per-item `stretch` / `stretchX` / `stretchY` caps — let a pinned item grow, or hold an elastic one back |
+| `1.3.0` | Per-axis elasticity, merged `fillComponent` tiles, FLIP `animateSize` / `animatePosition` |
+
+<!-- WHATSNEW:END -->
+
+Full history in [CHANGELOG.md](./CHANGELOG.md).
 
 ## Install
 
 ```bash
-bun add weighted-grid
-# npm install weighted-grid
+bun add weighted-grid   # npm / pnpm / yarn all fine
 ```
 
 ## Quick start
 
-The bar for entry is one prop — drop in children, tag a couple with `weight`, done:
+One prop. That's the whole entry fee.
 
 ```tsx
 import { Grid, GridItem } from "weighted-grid/react";
@@ -62,77 +73,77 @@ import { Grid, GridItem } from "weighted-grid/react";
 </Grid>;
 ```
 
-But `weight` is only the entry point. The same engine handles per-axis pinning, fair gap-filling,
-and a fallback slot for whatever's left over — a dashboard, not a toy grid:
+`weight` works like flexbox `flex`: _how much of the grid do I get_. Equal weights → equal
+squares. No coordinates, no breakpoints, no math.
+
+## The mental model
+
+Three ideas, and you've seen the whole library.
+
+**1 · Weight sizes both axes.** `weight={2}` is a 2×2 block. Pin one axis with `cols` or `rows`
+and `weight` keeps driving the other:
 
 ```tsx
-<Grid
-  nrCols={12}
-  stretch={2}
-  fillComponent={(rect) => <Placeholder {...rect} />}
->
-  {/* elastic on both axes — weight sizes rows and columns */}
-  <GridItem weight={4}>hero</GridItem>
+<GridItem weight={4}>elastic on both axes</GridItem>
+<GridItem cols={3} weight={2}>3 columns wide, weight sets the height</GridItem>
+<GridItem cols={2} rows={2}>strict — never stretches</GridItem>
+```
 
-  {/* pin one axis, weight keeps driving the other: 3 cols wide, weight sets the height */}
-  <GridItem cols={3} weight={2}>
-    featured
-  </GridItem>
+Elasticity is **per axis**. Only pinning _both_ makes an item fully rigid.
 
-  {/* fully strict — pin both axes, never stretches even when neighbors have room */}
-  <GridItem cols={2} rows={2}>
-    pinned
-  </GridItem>
+**2 · Leftover space gets absorbed, fairly.** Elastic items `stretch` into the gaps around them,
+split evenly between the neighbours flanking a gap — never all growth dumped on one side. Cap it
+globally with `stretch={n}` on the `Grid`, or per item.
 
-  {/* everything else is a plain 1x1 cell that stretches to close gaps automatically */}
+**3 · Whatever's left is yours.** Cells nothing could reach are merged into rectangular blocks and
+handed to `fillComponent` — one node per block, not one per cell. Skip the prop and they stay empty.
+
+```tsx
+<Grid nrCols={12} stretch={2} fillComponent={(rect) => <Placeholder {...rect} />}>
   {items.map((item) => (
     <GridItem key={item.id}>{item.label}</GridItem>
   ))}
 </Grid>
 ```
 
-`stretch` grows elastic axes into empty space fairly (split evenly between the items flanking a
-gap) before anything is left as a hole; `fillComponent` renders into whatever's left, merged into
-unified rectangular blocks instead of one node per cell. Full prop reference below.
+## API
 
-## `<Grid>` props
+### `<Grid>`
 
-| Prop              | Type                         | Default    | Description                                                                                                                                                        |
-| ----------------- | ---------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `nrCols`          | `number`                     | `7`        | Number of columns. Always scales with the container width.                                                                                                         |
-| `nrRows`          | `number`                     | —          | Minimum row tracks. Omit it (recommended) and the grid auto-counts what its items occupy — it's a floor, not a cap: content that needs more rows always gets them. |
-| `gap`             | `number \| string`           | `8`        | Spacing between items (`px` if a number).                                                                                                                          |
-| `rowHeight`       | `"auto" \| number \| string` | `"auto"`   | `"auto"`: stretch to fill the parent's height (the parent needs a height). A number/string: fixed height per row, the grid grows downward.                         |
-| `stretch`         | `number`                     | `Infinity` | Extra cells an elastic axis may grow, per axis, to absorb gaps (`0` off). Runs before `fillComponent`, not instead of it.                                          |
-| `preset`          | `PresetFn`                   | —          | Auto-assigns `weight`/`cols`/`rows` per item — see [Presets](#presets). Explicit `GridItem` props still win.                                                       |
-| `fillComponent`   | `ReactNode`                  | —          | Rendered in whatever `stretch` couldn't reach, merged into unified rectangular blocks. Omit it and those cells just stay empty.                                    |
-| `showGrid`        | `boolean`                    | `false`    | Debug overlay: tints the real `gap` gutter so column/row boundaries are always exactly where items are.                                                            |
-| `animateSize`     | `boolean`                    | `false`    | Smoothly transition an item's on-screen size when its span changes (FLIP transform).                                                                               |
-| `animatePosition` | `boolean`                    | `false`    | Same mechanism as `animateSize`, but for position.                                                                                                                 |
-| `className`       | `string`                     | —          | Applied to the outer container.                                                                                                                                    |
-| `style`           | `CSSProperties`              | —          | Merged into the outer container's inline style.                                                                                                                    |
+| Prop              | Type                         | Default    | What it does                                                                                                        |
+| ----------------- | ---------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| `nrCols`          | `number`                     | `7`        | Column count. Tracks scale with the container width.                                                                |
+| `nrRows`          | `number`                     | —          | Minimum row tracks — a floor, not a cap. Omit it; the grid counts what its items need.                              |
+| `gap`             | `number \| string`           | `8`        | Gutter between items (`px` if a number).                                                                            |
+| `rowHeight`       | `"auto" \| number \| string` | `"auto"`   | `"auto"` splits the parent's height into bands (parent needs a height). A value = fixed rows, grid grows downward.   |
+| `stretch`         | `number`                     | `Infinity` | How many extra cells an elastic axis may grow to absorb gaps. `0` turns it off.                                     |
+| `fillComponent`   | `ReactNode \| (rect) => ReactNode` | —    | Rendered into the merged leftover blocks. Gets `{ row, col, rowSpan, colSpan }` when it's a function.                |
+| `preset`          | `PresetFn`                   | —          | Auto-assigns props per item — see [Presets](#presets). Explicit `GridItem` props always win.                        |
+| `showGrid`        | `boolean`                    | `false`    | Debug overlay drawn exactly on the real gutter, so guides can't drift from the actual layout.                        |
+| `animateSize`     | `boolean`                    | `false`    | FLIP-transition an item's size when its span changes.                                                                |
+| `animatePosition` | `boolean`                    | `false`    | Same, for position. Best for grids where items nudge rather than jump.                                               |
+| `className`       | `string`                     | —          | On the outer container.                                                                                              |
+| `style`           | `CSSProperties`              | —          | Merged into the outer container's inline style.                                                                      |
 
-## `<GridItem>` props
+### `<GridItem>`
 
-| Prop     | Type     | Default | Description                                                                                                              |
-| -------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `weight` | `number` | `1`     | Relative size, flexbox-`flex`-style. Fills whichever axis isn't pinned by `cols`/`rows`; pin neither and it drives both. |
-| `cols`   | `number` | —       | Exact column span. Pins the horizontal axis (never stretches); `weight` keeps driving rows unless `rows` is also pinned. |
-| `rows`   | `number` | —       | Exact row span. Pins the vertical axis (never stretches); `weight` keeps driving columns unless `cols` is also pinned.   |
+| Prop                   | Type     | Default | What it does                                                                       |
+| ---------------------- | -------- | ------- | ---------------------------------------------------------------------------------- |
+| `weight`               | `number` | `1`     | Relative size. Fills whichever axis isn't pinned; pin neither and it drives both.  |
+| `cols`                 | `number` | —       | Exact column span. Pins the horizontal axis. Clamped to `nrCols`.                  |
+| `rows`                 | `number` | —       | Exact row span. Pins the vertical axis.                                            |
+| `stretch`              | `number` | —       | Overrides the grid's `stretch` for this item — including on a pinned axis.         |
+| `stretchX` / `stretchY`| `number` | —       | Same, per axis.                                                                     |
 
-Elasticity is per axis: an item with only `cols` set still stretches vertically by `weight`. Only
-an item with **both** `cols` and `rows` pinned is fully strict on both axes. See
-[`AGENTS.md`](./AGENTS.md) for the full mental model.
+> 💡 `stretch` on an item cuts both ways: let a `cols`-pinned card grow into a gap anyway, or stop
+> one greedy elastic item from eating the whole row.
 
-## Presets
+### Presets
 
-`preset` auto-assigns `weight`/`cols`/`rows` per item so a grid of plain `<GridItem>`s fills itself
-with no per-item config. It's a plain function — `({ count, nrCols, nrRows }) => Partial<GridItemProps>[]`
-— so it composes like any other value; explicit props on a `GridItem` always override what the
-preset returns for that index.
+A preset is just a function — `({ count, nrCols, nrRows }) => Partial<GridItemProps>[]` — that
+hands each item its defaults. Perfect for "here are 40 cards, make it look intentional".
 
 ```tsx
-import { Grid, GridItem } from "weighted-grid/react";
 import { masonPreset } from "weighted-grid/presets";
 
 <Grid nrCols={8} preset={masonPreset()}>
@@ -142,62 +153,55 @@ import { masonPreset } from "weighted-grid/presets";
 </Grid>;
 ```
 
-Built-in presets live under the `weighted-grid/presets` subpath (not the main entry point), so a
-preset you don't import — and its code, e.g. a noise generator — never ends up in your bundle:
-
-- **`masonPreset(brick = 2)`** — running-bond brick rows, alternating rows offset by a half-brick.
+- **`masonPreset(brick = 2)`** — running-bond brick rows, every other row offset by half a brick.
 - **`organicPreset(seed = 1)`** — a drifting mosaic of small/medium/large tiles, scaled to `nrCols`.
 
-Or write your own:
+They live on the `weighted-grid/presets` subpath, so a preset you don't import (and its code) never
+reaches your bundle. Rolling your own is a ten-liner:
 
 ```tsx
 import type { PresetFn } from "weighted-grid/presets";
 
 const stripes: PresetFn = ({ count, nrCols }) =>
-  Array.from({ length: count }, (_, i) =>
-    i % nrCols < nrCols / 2 ? { weight: 2 } : { weight: 1 },
-  );
-
-<Grid nrCols={8} preset={stripes}>
-  ...
-</Grid>;
+  Array.from({ length: count }, (_, i) => ({ weight: i % nrCols < nrCols / 2 ? 2 : 1 }));
 ```
 
-`Grid` memoizes the preset call on `[preset, items.length, nrCols, nrRows]`, so pass a stable
-function — a module-level preset like the example above, or a parameterized one wrapped in
-`useCallback` — or it recomputes on every render:
+Keep the function reference stable (module scope, or `useCallback`) — `Grid` memoizes on it.
+
+### Responsive columns
+
+There's no `wrap` prop, because there doesn't need to be one. Spans clamp to `nrCols`, so dropping
+the column count at a breakpoint reflows everything into fewer columns and more rows, `flex-wrap`
+style:
 
 ```tsx
-const preset = useCallback(organicPreset(42), []);
-<Grid nrCols={48} preset={preset}>
-  ...
-</Grid>;
+<Grid nrCols={isMobile ? 2 : 6}>...</Grid>
 ```
 
-## Responsive columns
+That covers "3 cards on desktop, 1 on mobile" without an intrinsic-sizing allocator in the engine.
 
-There's no `wrap` prop — you don't need one. Spans get clamped to `nrCols` (`src/utils.ts`), so
-dropping `nrCols` at a breakpoint just reflows everything into fewer columns/more rows, same as
-`flex-wrap`:
+## Examples
 
-```tsx
-const nrCols = useMediaCols({ base: 1, sm: 2, lg: 3 }); // your own hook — matchMedia/ResizeObserver
-<Grid nrCols={nrCols}>...</Grid>;
-```
+Every one of these runs in the [live demo](https://jayf0x.github.io/weighted-grid/) — the source is
+a few lines long and worth a skim.
 
-This isn't true content-driven wrapping (a fixed `minWidth` per item, packed by available width) —
-just a breakpoint → column-count table you own. That's enough for the common "3 cards on desktop,
-1-2 on mobile" case without an intrinsic-sizing allocator in the grid engine.
+| Example                                                                                                        | Shows off                                                              |
+| -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [prop-matrix](./demo/src/examples/prop-matrix/index.ts)                                                         | Every sizing prop side by side — the cheat sheet                       |
+| [pinned-spans](./demo/src/examples/pinned-spans/index.ts)                                                       | Strict `cols`/`rows` items with elastic ones flowing around them       |
+| [row-height](./demo/src/examples/row-height/index.tsx)                                                          | `"auto"` bands vs. fixed rows, with live controls                      |
+| [modes](./demo/src/examples/modes/index.tsx)                                                                    | `masonPreset` and `organicPreset` on the same content                   |
+| [organic-mosaic](./demo/src/examples/organic-mosaic/index.tsx)                                                  | 30 real cards, 48 columns, `stretch` + `fillComponent` doing the work  |
 
 ## Development
 
 ```bash
 bun install
-bun run test          # bun test
+bun run test        # bun test
 bun run typecheck
-bun run build         # vite → dist/ (ESM + CJS + .d.ts)
-bun run format        # biome check --write
-bun run demo:dev      # the demo app (demo/) — examples, controls, QA info toggle
+bun run build       # vite → dist/
+bun run format      # biome check --write
+bun run demo:dev    # the demo app in demo/
 ```
 
 ## License
