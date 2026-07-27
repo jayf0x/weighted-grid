@@ -3,6 +3,10 @@
 All notable changes to `weighted-grid`. Dates are release dates; versions follow
 [semver](https://semver.org/).
 
+## 1.5.1 — 2026-07-27
+
+- Internal and tooling changes only.
+
 ## 1.5.0 — 2026-07-27
 
 - **Presets.** New `preset` prop on `<Grid>`: a `PresetFn` — `({ count, nrCols, nrRows }) =>
