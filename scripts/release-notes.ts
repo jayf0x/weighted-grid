@@ -84,9 +84,7 @@ if (firstEntry === -1) {
 // ── README.md ────────────────────────────────────────────────────────────────
 // Keep the two previous rows verbatim; the model only ever writes the new one.
 const readme = await Bun.file(README).text();
-const rows = (taglRead(readme, 'WHATSNEW') ?? '')
-  .split('\n')
-  .filter((line) => line.trim().startsWith('| `'));
+const rows = (taglRead(readme, 'WHATSNEW') ?? '').split('\n').filter((line) => line.trim().startsWith('| `'));
 const table = [
   '| Version | Highlights |',
   '| ------- | ---------- |',

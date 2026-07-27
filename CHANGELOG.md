@@ -5,6 +5,12 @@ All notable changes to `weighted-grid`. Dates are release dates; versions follow
 
 ## 1.5.0 — 2026-07-27
 
+- Introduce presets system for configurable item layout defaults
+- Add mason preset for masonry-style layouts
+- Fix stretch growth caps in dev-info mode
+
+## 1.5.0 — 2026-07-27
+
 - **Presets.** New `preset` prop on `<Grid>`: a `PresetFn` — `({ count, nrCols, nrRows }) =>
   Partial<GridItemProps>[]` — that assigns per-item defaults. Explicit `GridItem` props still win.
 - Ships `masonPreset(brick)` and `organicPreset(seed)` from the new `weighted-grid/presets`

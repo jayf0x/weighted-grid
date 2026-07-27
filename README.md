@@ -41,13 +41,11 @@ and not trying to be — want that? [Open an issue](https://github.com/jayf0x/we
 ## What's new
 
 <!-- WHATSNEW:START -->
-
 | Version | Highlights |
 | ------- | ---------- |
+| `1.5.0` | Introduce presets system for layout customization |
 | `1.5.0` | 🎨 **Presets** — `masonPreset` / `organicPreset` on the `weighted-grid/presets` subpath |
 | `1.4.0` | Per-item `stretch` / `stretchX` / `stretchY` caps — let a pinned item grow, or hold an elastic one back |
-| `1.3.0` | Per-axis elasticity, merged `fillComponent` tiles, FLIP `animateSize` / `animatePosition` |
-
 <!-- WHATSNEW:END -->
 
 Full history in [CHANGELOG.md](./CHANGELOG.md).
