@@ -2,7 +2,7 @@
   "name": "weighted-grid",
   "version": "1.4.0",
   "type": "module",
-  "description": "A zero-dependency, weight-driven React grid that fills its container, agnostic to what's inside each cell.",
+  "description": "Zero-dependency React grid: weight in, layout out. Elastic fill, fair gap-stretch, native CSS Grid — no coordinates, no manual math.",
   "author": "jayF0x",
   "license": "MIT",
   "module": "./dist/index.js",
@@ -76,6 +76,10 @@
     "weighted-layout",
     "responsive-grid",
     "css-grid",
+    "masonry",
+    "dashboard-grid",
+    "flexbox",
+    "elastic-layout",
     "typescript"
   ],
   "repository": {
