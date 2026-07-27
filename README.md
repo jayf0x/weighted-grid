@@ -104,6 +104,7 @@ unified rectangular blocks instead of one node per cell. Full prop reference bel
 | `gap`             | `number \| string`           | `8`        | Spacing between items (`px` if a number).                                                                                                                          |
 | `rowHeight`       | `"auto" \| number \| string` | `"auto"`   | `"auto"`: stretch to fill the parent's height (the parent needs a height). A number/string: fixed height per row, the grid grows downward.                         |
 | `stretch`         | `number`                     | `Infinity` | Extra cells an elastic axis may grow, per axis, to absorb gaps (`0` off). Runs before `fillComponent`, not instead of it.                                          |
+| `preset`          | `PresetFn`                   | —          | Auto-assigns `weight`/`cols`/`rows` per item — see [Presets](#presets). Explicit `GridItem` props still win.                                                       |
 | `fillComponent`   | `ReactNode`                  | —          | Rendered in whatever `stretch` couldn't reach, merged into unified rectangular blocks. Omit it and those cells just stay empty.                                    |
 | `showGrid`        | `boolean`                    | `false`    | Debug overlay: tints the real `gap` gutter so column/row boundaries are always exactly where items are.                                                            |
 | `animateSize`     | `boolean`                    | `false`    | Smoothly transition an item's on-screen size when its span changes (FLIP transform).                                                                               |
@@ -122,6 +123,71 @@ unified rectangular blocks instead of one node per cell. Full prop reference bel
 Elasticity is per axis: an item with only `cols` set still stretches vertically by `weight`. Only
 an item with **both** `cols` and `rows` pinned is fully strict on both axes. See
 [`AGENTS.md`](./AGENTS.md) for the full mental model.
+
+## Presets
+
+`preset` auto-assigns `weight`/`cols`/`rows` per item so a grid of plain `<GridItem>`s fills itself
+with no per-item config. It's a plain function — `({ count, nrCols, nrRows }) => Partial<GridItemProps>[]`
+— so it composes like any other value; explicit props on a `GridItem` always override what the
+preset returns for that index.
+
+```tsx
+import { Grid, GridItem } from "weighted-grid/react";
+import { masonPreset } from "weighted-grid/presets";
+
+<Grid nrCols={8} preset={masonPreset()}>
+  {items.map((item) => (
+    <GridItem key={item.id}>{item.label}</GridItem>
+  ))}
+</Grid>;
+```
+
+Built-in presets live under the `weighted-grid/presets` subpath (not the main entry point), so a
+preset you don't import — and its code, e.g. a noise generator — never ends up in your bundle:
+
+- **`masonPreset(brick = 2)`** — running-bond brick rows, alternating rows offset by a half-brick.
+- **`organicPreset(seed = 1)`** — a drifting mosaic of small/medium/large tiles, scaled to `nrCols`.
+
+Or write your own:
+
+```tsx
+import type { PresetFn } from "weighted-grid/presets";
+
+const stripes: PresetFn = ({ count, nrCols }) =>
+  Array.from({ length: count }, (_, i) =>
+    i % nrCols < nrCols / 2 ? { weight: 2 } : { weight: 1 },
+  );
+
+<Grid nrCols={8} preset={stripes}>
+  ...
+</Grid>;
+```
+
+`Grid` memoizes the preset call on `[preset, items.length, nrCols, nrRows]`, so pass a stable
+function — a module-level preset like the example above, or a parameterized one wrapped in
+`useCallback` — or it recomputes on every render:
+
+```tsx
+const preset = useCallback(organicPreset(42), []);
+<Grid nrCols={48} preset={preset}>
+  ...
+</Grid>;
+```
+
+## Responsive columns
+
+There's no `wrap` prop — you don't need one. Spans get clamped to `nrCols` (`src/utils.ts`), so
+dropping `nrCols` at a breakpoint just reflows everything into fewer columns/more rows, same as
+`flex-wrap`:
+
+```tsx
+const nrCols = useMediaCols({ base: 1, sm: 2, lg: 3 }); // your own hook — matchMedia/ResizeObserver
+<Grid nrCols={nrCols}>...</Grid>;
+```
+
+This isn't true content-driven wrapping (a fixed `minWidth` per item, packed by available width) —
+just a breakpoint → column-count table you own. That's enough for the common "3 cards on desktop,
+1-2 on mobile" case without an intrinsic-sizing allocator in the grid engine.
 
 ## Development
 

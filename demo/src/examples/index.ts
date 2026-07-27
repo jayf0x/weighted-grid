@@ -15,6 +15,6 @@ export const examples: ExampleEntry[] = [
   { kind: 'data', example: propMatrixExample },
   { kind: 'component', title: 'rowHeight — auto vs. fixed', Component: RowHeightExample },
   { kind: 'data', example: pinnedSpansExample },
-  { kind: 'component', title: 'mode presets', Component: ModesExample },
+  { kind: 'component', title: 'presets', Component: ModesExample },
   { kind: 'component', title: 'organic mosaic', Component: OrganicMosaicExample },
 ];

@@ -1,20 +1,20 @@
 import { Grid, GridItem } from "weighted-grid/react";
+import { organicPreset } from "weighted-grid/presets";
 import type { InfoMode } from "@/typing";
 import { Filler } from "@/components/Filler";
-import { generateOrganicTiles } from "./generator";
 import { Card } from "./Card";
+import { useIsMobile } from "@/utils/hooks";
+import { useCallback } from "react";
 
-const SEED = 42;
-const NR_COLS = 48;
+const TILE_COUNT = 30;
 
-const META = { nrCols: NR_COLS, rowHeight: 12, gap: 4, stretch: 8 } as const;
-const TILES = generateOrganicTiles(SEED, 40, NR_COLS);
-
-/** "Exotic Example" — real (well, real-looking) content, no controls, no QA labeling (seed/tile
- * count are implementation detail nobody browsing the demo cares about). Ported from dev's
- * `2-organic.ts` + `organic.ts` generator. Static — generated once at module scope, not per
- * render. Sized big — this is the "full fashion" showcase, last in the stacked shell. */
+/** "Exotic Example" — real-looking card content, last in the stacked shell. */
 export function OrganicMosaicExample({ infoMode }: { infoMode: InfoMode }) {
+  const isMobile = useIsMobile();
+
+  // Stable across re-renders so Grid's preset memo doesn't recompute every render.
+  const preset = useCallback(organicPreset(42), []);
+
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-[13px] font-medium uppercase tracking-[0.08em] text-ink/45">
@@ -22,12 +22,16 @@ export function OrganicMosaicExample({ infoMode }: { infoMode: InfoMode }) {
       </h2>
       <div className="h-[900px] w-full overflow-auto rounded-lg border border-line bg-panel p-1.5">
         <Grid
-          {...META}
+          nrCols={isMobile ? 20 : 48}
+          rowHeight={12}
+          gap={4}
+          stretch={8}
+          preset={preset}
           fillComponent={(rect) => <Filler {...rect} />}
           className="h-full w-full"
         >
-          {TILES.map((args, i) => (
-            <GridItem key={i} {...args}>
+          {Array.from({ length: TILE_COUNT }, (_, i) => (
+            <GridItem key={i}>
               <Card index={i} />
             </GridItem>
           ))}

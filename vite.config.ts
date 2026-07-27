@@ -11,6 +11,7 @@ export default defineConfig({
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
         react: resolve(__dirname, 'src/react.tsx'),
+        presets: resolve(__dirname, 'src/presets.ts'),
       },
       formats: ['es'],
       fileName: (_format, name) => `${name}.js`,

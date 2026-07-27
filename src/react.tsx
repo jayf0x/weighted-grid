@@ -13,9 +13,10 @@ import {
   type ReactNode,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
 } from 'react';
-import { type PresetMode, presets } from './presets';
+import type { PresetFn } from './presets';
 import {
   asGridItems,
   fillDeadZones,
@@ -65,9 +66,12 @@ export type GridProps = PropsWithChildren<{
    * content that needs more rows always gets them regardless of this value (same as CSS Grid's own
    * implicit-row overflow), so setting it *below* what content needs has no visible effect. */
   nrRows?: number;
-  /** Auto-assigns `weight`/`cols`/`rows` per item so the grid fills itself with minimal config —
-   * see {@link presets}. Explicit props on a `GridItem` always override the preset's defaults. */
-  mode?: PresetMode;
+  /** Auto-assigns `weight`/`cols`/`rows` per item so the grid fills itself with minimal config — a
+   * {@link PresetFn}, e.g. `masonPreset(4)` from `weighted-grid/presets`, or your own
+   * `({ count, nrCols }) => [...]`. Explicit props on a `GridItem` always override the preset's
+   * defaults. Pass a stable function (e.g. wrap a custom preset in `useCallback`) so it doesn't
+   * recompute every render. */
+  preset?: PresetFn;
   gap?: number | string;
   /** `"auto"` (default): stretch to the parent's height, splitting it into row bands — the parent
    * must have a height. A number/string (e.g. `100`, `"5rem"`): fixed height per row, grid grows down. */
@@ -194,7 +198,7 @@ export const Grid = memo((props: GridProps) => {
     children,
     nrCols = 7,
     nrRows,
-    mode,
+    preset,
     gap = 8,
     rowHeight = 'auto',
     stretch = Number.POSITIVE_INFINITY,
@@ -207,7 +211,10 @@ export const Grid = memo((props: GridProps) => {
   } = props;
 
   const items = asGridItems(children);
-  const presetProps = mode ? presets[mode](items.length, nrCols) : undefined;
+  const presetProps = useMemo(
+    () => preset?.({ count: items.length, nrCols, nrRows }),
+    [preset, items.length, nrCols, nrRows],
+  );
   // Preset defaults, overridden by whatever the caller actually set on the `GridItem` — a plain
   // object spread per item, not a clone; nothing downstream needs the element itself, only its
   // props (`spanFor`/`stretchCapsOf` read a props object, rendering reads `item.props.children`

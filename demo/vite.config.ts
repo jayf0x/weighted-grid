@@ -7,6 +7,7 @@ import { defineConfig } from 'vite';
 // Import the library straight from source so the demo tracks local changes.
 const weightedGrid = fileURLToPath(new URL('../src/index.ts', import.meta.url));
 const weightedGridReact = fileURLToPath(new URL('../src/react.tsx', import.meta.url));
+const weightedGridPresets = fileURLToPath(new URL('../src/presets.ts', import.meta.url));
 
 // react is an *optional* peer dep of weighted-grid, so vite stubs it when resolving ../src/react.tsx.
 // Force it onto the demo's real react install.
@@ -27,6 +28,7 @@ export default defineConfig({
     alias: [
       { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
       { find: 'weighted-grid/react', replacement: weightedGridReact },
+      { find: 'weighted-grid/presets', replacement: weightedGridPresets },
       { find: 'weighted-grid', replacement: weightedGrid },
       { find: /^react\/jsx-runtime$/, replacement: jsxRuntime },
       { find: /^react\/jsx-dev-runtime$/, replacement: jsxDevRuntime },
