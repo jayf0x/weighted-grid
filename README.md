@@ -44,6 +44,8 @@ npm install weighted-grid
 
 ## Quick start
 
+The bar for entry is one prop — drop in children, tag a couple with `weight`, done:
+
 ```tsx
 import { Grid, GridItem } from 'weighted-grid/react';
 
@@ -54,6 +56,35 @@ import { Grid, GridItem } from 'weighted-grid/react';
   <GridItem>c</GridItem>
 </Grid>;
 ```
+
+But `weight` is only the entry point. The same engine handles per-axis pinning, fair gap-filling,
+and a fallback slot for whatever's left over — a dashboard, not a toy grid:
+
+```tsx
+<Grid nrCols={12} stretch={2} fillComponent={(rect) => <Placeholder {...rect} />}>
+  {/* elastic on both axes — weight sizes rows and columns */}
+  <GridItem weight={4}>hero</GridItem>
+
+  {/* pin one axis, weight keeps driving the other: 3 cols wide, weight sets the height */}
+  <GridItem cols={3} weight={2}>
+    featured
+  </GridItem>
+
+  {/* fully strict — pin both axes, never stretches even when neighbors have room */}
+  <GridItem cols={2} rows={2}>
+    pinned
+  </GridItem>
+
+  {/* everything else is a plain 1x1 cell that stretches to close gaps automatically */}
+  {items.map((item) => (
+    <GridItem key={item.id}>{item.label}</GridItem>
+  ))}
+</Grid>;
+```
+
+`stretch` grows elastic axes into empty space fairly (split evenly between the items flanking a
+gap) before anything is left as a hole; `fillComponent` renders into whatever's left, merged into
+unified rectangular blocks instead of one node per cell. Full prop reference below.
 
 > Want Vue/Svelte support? Please open [an issue](https://github.com/jayf0x/weighted-grid/issues/new) 🙂
 
@@ -94,7 +125,6 @@ bun run typecheck
 bun run build         # vite → dist/ (ESM + CJS + .d.ts)
 bun run format        # biome check --write
 bun run demo:dev      # the demo app (demo/) — examples, controls, QA info toggle
-bun run dev:dev       # original reference/QA playground (dev/), superseded by demo/
 ```
 
 ## License

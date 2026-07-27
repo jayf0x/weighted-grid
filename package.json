@@ -40,7 +40,6 @@
     "format:check": "biome check .",
     "lint": "biome lint ./src",
     "lint:fix": "biome lint --write ./src",
-    "dev:dev": "cd dev && bun install && bun run dev",
     "demo:dev": "cd demo && bun install && bun run dev",
     "demo:deploy": "bash ./scripts/deploy-pages.sh",
     "npm:bootstrap": "bash ./scripts/bootstrap-npm.sh",
