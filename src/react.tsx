@@ -15,6 +15,7 @@ import {
   useLayoutEffect,
   useRef,
 } from 'react';
+import { type PresetMode, presets } from './presets';
 import {
   asGridItems,
   fillDeadZones,
@@ -64,6 +65,9 @@ export type GridProps = PropsWithChildren<{
    * content that needs more rows always gets them regardless of this value (same as CSS Grid's own
    * implicit-row overflow), so setting it *below* what content needs has no visible effect. */
   nrRows?: number;
+  /** Auto-assigns `weight`/`cols`/`rows` per item so the grid fills itself with minimal config —
+   * see {@link presets}. Explicit props on a `GridItem` always override the preset's defaults. */
+  mode?: PresetMode;
   gap?: number | string;
   /** `"auto"` (default): stretch to the parent's height, splitting it into row bands — the parent
    * must have a height. A number/string (e.g. `100`, `"5rem"`): fixed height per row, grid grows down. */
@@ -190,6 +194,7 @@ export const Grid = memo((props: GridProps) => {
     children,
     nrCols = 7,
     nrRows,
+    mode,
     gap = 8,
     rowHeight = 'auto',
     stretch = Number.POSITIVE_INFINITY,
@@ -202,7 +207,15 @@ export const Grid = memo((props: GridProps) => {
   } = props;
 
   const items = asGridItems(children);
-  const gridSpan = items.map((item) => spanFor(item.props, nrCols));
+  const presetProps = mode ? presets[mode](items.length, nrCols) : undefined;
+  // Preset defaults, overridden by whatever the caller actually set on the `GridItem` — a plain
+  // object spread per item, not a clone; nothing downstream needs the element itself, only its
+  // props (`spanFor`/`stretchCapsOf` read a props object, rendering reads `item.props.children`
+  // directly, untouched by any of this).
+  const itemProps = presetProps
+    ? items.map((item, i) => ({ ...presetProps[i], ...item.props }))
+    : items.map((item) => item.props);
+  const gridSpan = itemProps.map((props) => spanFor(props, nrCols));
   const track = rowHeight === 'auto' ? 'minmax(0, 1fr)' : toCss(rowHeight);
   // `nrRows` is a floor, not a hard cap: `placeSpans` below never wraps on row count (only `nrCols`
   // wraps), so content that needs more rows than `nrRows` declares still gets placed past it. If
@@ -217,7 +230,7 @@ export const Grid = memo((props: GridProps) => {
   const base = placeSpans(gridSpan, nrCols, false).placements;
   const placed = fillDeadZones(
     base,
-    items.map((it) => stretchCapsOf(it.props, stretch)),
+    itemProps.map((props) => stretchCapsOf(props, stretch)),
     nrCols,
     rowCount,
   );

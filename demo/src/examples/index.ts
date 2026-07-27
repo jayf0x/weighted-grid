@@ -1,4 +1,5 @@
 import type { ExampleEntry } from '@/typing';
+import { ModesExample } from './modes';
 import { pinnedSpansExample } from './pinned-spans';
 import { propMatrixExample } from './prop-matrix';
 import { RowHeightExample } from './row-height';
@@ -14,5 +15,6 @@ export const examples: ExampleEntry[] = [
   { kind: 'data', example: propMatrixExample },
   { kind: 'component', title: 'rowHeight — auto vs. fixed', Component: RowHeightExample },
   { kind: 'data', example: pinnedSpansExample },
+  { kind: 'component', title: 'mode presets', Component: ModesExample },
   { kind: 'component', title: 'organic mosaic', Component: OrganicMosaicExample },
 ];
