@@ -22,6 +22,14 @@ if (!version) throw new Error('usage: bun scripts/release-notes.ts <version>');
 
 const warn = (msg: string) => console.warn(`! release notes skipped — ${msg}`);
 
+// A hand-written entry for this version wins — it's already curated, and re-running the script
+// (interrupted publish, dev case) must never duplicate or overwrite it.
+const changelog = await Bun.file(CHANGELOG).text();
+if (new RegExp(`^## ${version.replace(/\./g, '\\.')}\\b`, 'm').test(changelog)) {
+  warn(`CHANGELOG.md already has a ${version} entry`);
+  process.exit(0);
+}
+
 const prevTag = (await $`git describe --tags --abbrev=0`.nothrow().text()).trim();
 const range = prevTag ? `${prevTag}..HEAD` : 'HEAD';
 const commits = (await $`git log ${range} --format=%s --no-merges`.text()).trim();
@@ -73,7 +81,6 @@ try {
 // ── CHANGELOG.md ─────────────────────────────────────────────────────────────
 const date = new Date().toISOString().slice(0, 10);
 const section = `## ${version} — ${date}\n\n${notes.changelog.map((b) => `- ${b}`).join('\n')}\n`;
-const changelog = await Bun.file(CHANGELOG).text();
 const firstEntry = changelog.indexOf('\n## ');
 if (firstEntry === -1) {
   await Bun.write(CHANGELOG, `${changelog.trimEnd()}\n\n${section}`);
@@ -82,9 +89,12 @@ if (firstEntry === -1) {
 }
 
 // ── README.md ────────────────────────────────────────────────────────────────
-// Keep the two previous rows verbatim; the model only ever writes the new one.
+// Keep the two previous rows verbatim; the model only ever writes the new one. Any stale row for
+// this same version is dropped rather than duplicated.
 const readme = await Bun.file(README).text();
-const rows = (taglRead(readme, 'WHATSNEW') ?? '').split('\n').filter((line) => line.trim().startsWith('| `'));
+const rows = (taglRead(readme, 'WHATSNEW') ?? '')
+  .split('\n')
+  .filter((line) => line.trim().startsWith('| `') && !line.trim().startsWith(`| \`${version}\``));
 const table = [
   '| Version | Highlights |',
   '| ------- | ---------- |',
