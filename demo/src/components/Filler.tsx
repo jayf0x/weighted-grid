@@ -8,13 +8,20 @@ export const Filler = ({
   col,
   rowSpan,
   colSpan,
+  className = "",
 }: {
   row: number;
   col: number;
   rowSpan: number;
   colSpan: number;
+  className?: string;
 }) => (
-  <div className="flex h-full w-full items-center justify-center rounded-md border border-dashed border-black/10 text-center font-mono text-[10px] text-ink/25">
+  <div
+    className={
+      "flex h-full w-full items-center justify-center rounded-md border border-dashed border-black/10 text-center font-mono text-[10px] text-ink/25 " +
+      className
+    }
+  >
     ({row},{col}) {colSpan}×{rowSpan}
   </div>
 );

@@ -27,11 +27,11 @@ export function OrganicMosaicExample({ infoMode }: { infoMode: InfoMode }) {
           gap={4}
           stretch={8}
           preset={preset}
-          fillComponent={(rect) => <Filler {...rect} />}
+          fillComponent={(rect) => <Filler {...rect} className="bg-[#aef]!" />}
           className="h-full w-full"
         >
           {Array.from({ length: TILE_COUNT }, (_, i) => (
-            <GridItem key={i}>
+            <GridItem key={i} stretch={10}>
               <Card index={i} />
             </GridItem>
           ))}

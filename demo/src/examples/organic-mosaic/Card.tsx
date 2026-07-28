@@ -1,7 +1,7 @@
 // 10 static placeholder images pre-downloaded into demo/public/organic/ (see AGENTS.md's "demo/"
 // section for the one-off curl command). Deterministic, no fetch, no runtime state — cycles the 10
 // fixed filenames by tile index.
-export const imageFor = (i: number) => `/organic/img-${i % 10}.jpg`;
+export const imageFor = (i: number) => `${import.meta.env.BASE_URL}organic/img-${i % 10}.jpg`;
 
 export const Card = ({ index }: { index: number }) => (
   <div className="group relative h-full w-full overflow-hidden rounded-md border border-black/[0.04] bg-panel">

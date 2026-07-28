@@ -10,7 +10,6 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "weighted-grid/react": ["../src/react.tsx"],
