@@ -7,8 +7,8 @@
 //   scripts/patch-json.mjs patch        # same as above, kept for compatibility
 //   PKG_JSON=other.json scripts/patch-json.mjs
 
-import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { execFileSync } from 'node:child_process';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const getVFromV = (version: string) => {
   if (!/^(\d+)\.(\d+)\.(\d+)$/.test(version)) {
@@ -16,32 +16,28 @@ const getVFromV = (version: string) => {
     process.exit(1);
   }
 
-  return version.split(".").map(Number);
+  return version.split('.').map(Number);
 };
 
-const file = process.env.PKG_JSON ?? "package.json";
+const file = process.env.PKG_JSON ?? 'package.json';
 
-const pkg = JSON.parse(readFileSync(file, "utf8"));
+const pkg = JSON.parse(readFileSync(file, 'utf8'));
 let [major, minor, patch] = getVFromV(pkg.version);
 
 try {
-  const latestTag = execFileSync(
-    "git",
-    ["tag", "--list", "v*", "--sort=-version:refname"],
-    { encoding: "utf8" },
-  )
+  const latestTag = execFileSync('git', ['tag', '--list', 'v*', '--sort=-version:refname'], { encoding: 'utf8' })
     .trim()
-    .split("\n")
+    .split('\n')
     .find(Boolean);
 
   if (latestTag) {
-    const prev = getVFromV(latestTag.split("v")[1]);
+    const prev = getVFromV(latestTag.split('v')[1]);
     if (prev[0] === major && prev[1] === minor) {
       patch += 1;
     }
   }
 } catch (e) {
-  console.error("Could not parse latest tag. Error:", e);
+  console.error('Could not parse latest tag. Error:', e);
 }
 
 const next = `${major}.${minor}.${patch}`;
