@@ -3,6 +3,10 @@
 All notable changes to `weighted-grid`. Dates are release dates; versions follow
 [semver](https://semver.org/).
 
+## 1.5.2 — 2026-07-28
+
+- Internal and tooling changes only.
+
 ## 1.5.1 — 2026-07-27
 
 - Internal and tooling changes only.

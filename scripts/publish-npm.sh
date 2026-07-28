@@ -21,7 +21,7 @@ bun run format
 
 # ── version bump ──────────────────────────────────────────────────────────────
 # This release flow is patch-only; any non-patch BUMP value is rejected.
-NEW=$(bun "$(dirname "$0")/patch-json.mjs")
+NEW=$(bun "$(dirname "$0")/patch-json.ts")
 TAG="v$NEW"
 
 if git rev-parse "$TAG" >/dev/null 2>&1; then
