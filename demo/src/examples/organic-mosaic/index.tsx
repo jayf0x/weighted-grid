@@ -13,7 +13,7 @@ export function OrganicMosaicExample({ infoMode }: { infoMode: InfoMode }) {
   const isMobile = useIsMobile();
 
   // Stable across re-renders so Grid's preset memo doesn't recompute every render.
-  const preset = useCallback(organicPreset(42), []);
+  const preset = useCallback(organicPreset({ seed: 42 }), []);
 
   return (
     <section className="flex flex-col gap-3">
@@ -23,11 +23,16 @@ export function OrganicMosaicExample({ infoMode }: { infoMode: InfoMode }) {
       <div className="h-[900px] w-full overflow-auto rounded-lg border border-line bg-panel p-1.5">
         <Grid
           nrCols={isMobile ? 20 : 48}
-          rowHeight={12}
-          gap={4}
-          stretch={8}
+          rowHeight={8}
+          // gap={4}
+          // stretch={8}
           preset={preset}
-          fillComponent={(rect) => <Filler {...rect} className="bg-[#aef]!" />}
+          fillComponent={(rect) => (
+            <Filler
+              {...rect}
+              // className="bg-cover bg-[url('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMmZhYXlhem94dzdyaThtejRxZ2tqMDAwMW9keDk5NmI5Z2V4Z3pncCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/hl3NjtLaPUM1RBt45y/giphy.gif')]"
+            />
+          )}
           className="h-full w-full"
         >
           {Array.from({ length: TILE_COUNT }, (_, i) => (

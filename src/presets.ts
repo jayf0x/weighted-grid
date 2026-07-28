@@ -1,4 +1,4 @@
-import type { GridItemProps } from './react';
+import type { GridItemProps } from "./react";
 
 /** Args a preset gets to compute defaults from — the same values `Grid` already has on hand. */
 export type PresetArgs = { count: number; nrCols: number; nrRows?: number };
@@ -17,10 +17,15 @@ export const masonPreset =
     const workCols = nrCols - (nrCols % brick);
     const bricksPerRow = Math.max(1, workCols / brick);
     const alignedRow = Array(bricksPerRow).fill(brick);
-    const offsetRow = [brick / 2, ...Array(Math.max(bricksPerRow - 1, 0)).fill(brick), brick / 2];
+    const offsetRow = [
+      brick / 2,
+      ...Array(Math.max(bricksPerRow - 1, 0)).fill(brick),
+      brick / 2,
+    ];
 
     const widths: number[] = [];
-    for (let row = 0; widths.length < count; row++) widths.push(...(row % 2 === 0 ? alignedRow : offsetRow));
+    for (let row = 0; widths.length < count; row++)
+      widths.push(...(row % 2 === 0 ? alignedRow : offsetRow));
 
     return widths.slice(0, count).map((cols) => ({ cols, rows: 1 }));
   };
@@ -52,25 +57,40 @@ function makeNoise(seed: number) {
 const TIER_FRACTIONS = [8 / 48, 12 / 48, 20 / 48]; // small/medium/large
 const FLEX_FRACTION = 2 / 48;
 
+export type OrganicPresetOptions = {
+  seed?: number;
+  /** Multiplies every tier fraction — >1 for chunkier tiles, <1 for finer ones. */
+  size?: number;
+  /** Overrides the strict-axis stretch-allowance fraction (fraction of `nrCols`). */
+  flex?: number;
+};
+
 /** Drifting mosaic: a smoothly interpolated noise trend biases nearby items toward similar size
  * tiers, so the result reads as runs of similarly-sized tiles with occasional breaks rather than
  * flat per-item noise. Each item pins one or two axes at a discrete small/medium/large tier
- * (scaled off `nrCols`) and gets a small `stretchX`/`stretchY` allowance so nothing sits fully
- * rigid. */
+ * (scaled off `nrCols`) and gets a small `stretch` allowance so nothing sits fully rigid — pass a
+ * `GridItem`-level `stretch`/`stretchX`/`stretchY` to override it per item. */
 export const organicPreset =
-  (seed = 1): PresetFn =>
+  ({
+    seed = 1,
+    size: sizeMult = 1,
+    flex: flexFraction = FLEX_FRACTION,
+  }: OrganicPresetOptions = {}): PresetFn =>
   ({ count, nrCols }) => {
-    const tierSizes = TIER_FRACTIONS.map((f) => Math.max(2, Math.round(f * nrCols)));
+    const tierSizes = TIER_FRACTIONS.map((f) =>
+      Math.max(2, Math.round(f * sizeMult * nrCols)),
+    );
     const cardMin = tierSizes[0];
-    const flex = Math.max(1, Math.round(FLEX_FRACTION * nrCols));
-    const tierFor = (n: number) => tierSizes[Math.floor(n * tierSizes.length) % tierSizes.length];
+    const flex = Math.max(1, Math.round(flexFraction * nrCols));
+    const tierFor = (n: number) =>
+      tierSizes[Math.floor(n * tierSizes.length) % tierSizes.length];
 
     const sizeNoise = makeNoise(seed); // drifting "how big is this patch of tiles" trend
     const modeNoise = makeNoise(seed + 101); // drifting "which axis stays pinned" trend
     const pick = makeNoise(seed + 303); // per-tile jitter/picks, not a trend
 
     const tiles: Partial<GridItemProps>[] = [];
-    let prevKey = '';
+    let prevKey = "";
 
     for (let i = 0; i < count; i++) {
       const size = sizeNoise(i / 5); // patches ~5 tiles wide
@@ -90,21 +110,27 @@ export const organicPreset =
           ? {
               cols: tierFor(size) + jitterCols,
               rows: tierFor(elasticSize) + jitterRows,
-              stretchX: flex,
-              stretchY: flex,
+              stretch: flex,
             }
           : {
               cols: tierFor(elasticSize) + jitterCols,
               rows: tierFor(size) + jitterRows,
-              stretchX: flex,
-              stretchY: flex,
+              stretch: flex,
             };
       } else if (mode < 0.65) {
         // col-pinned, row axis elastic — "2 x auto"
-        tile = { cols: tierFor(size) + jitterCols, weight: tierFor(elasticSize) + jitterRows, stretchX: flex };
+        tile = {
+          cols: tierFor(size) + jitterCols,
+          weight: tierFor(elasticSize) + jitterRows,
+          stretch: flex,
+        };
       } else {
         // row-pinned, col axis elastic — "auto x 2"
-        tile = { rows: tierFor(size) + jitterRows, weight: tierFor(elasticSize) + jitterCols, stretchY: flex };
+        tile = {
+          rows: tierFor(size) + jitterRows,
+          weight: tierFor(elasticSize) + jitterCols,
+          stretch: flex,
+        };
       }
 
       // anti-repetition: never place two tiles with the identical footprint back to back
@@ -119,8 +145,13 @@ export const organicPreset =
     }
 
     for (const { cols, rows } of tiles) {
-      if ((cols !== undefined && cols < cardMin) || (rows !== undefined && rows < cardMin)) {
-        throw new Error(`organicPreset: tile thinner than the ${cardMin}-cell minimum`);
+      if (
+        (cols !== undefined && cols < cardMin) ||
+        (rows !== undefined && rows < cardMin)
+      ) {
+        throw new Error(
+          `organicPreset: tile thinner than the ${cardMin}-cell minimum`,
+        );
       }
     }
 

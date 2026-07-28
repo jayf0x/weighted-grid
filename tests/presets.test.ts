@@ -30,20 +30,20 @@ describe('masonPreset', () => {
 
 describe('organicPreset', () => {
   test('produces one entry per item, deterministic per seed', () => {
-    const a = organicPreset(1)({ count: 20, nrCols: 48 });
-    const b = organicPreset(1)({ count: 20, nrCols: 48 });
+    const a = organicPreset({ seed: 1 })({ count: 20, nrCols: 48 });
+    const b = organicPreset({ seed: 1 })({ count: 20, nrCols: 48 });
     expect(a).toHaveLength(20);
     expect(a).toEqual(b);
   });
 
   test('different seeds diverge', () => {
-    const a = organicPreset(1)({ count: 20, nrCols: 48 });
-    const b = organicPreset(2)({ count: 20, nrCols: 48 });
+    const a = organicPreset({ seed: 1 })({ count: 20, nrCols: 48 });
+    const b = organicPreset({ seed: 2 })({ count: 20, nrCols: 48 });
     expect(a).not.toEqual(b);
   });
 
   test('every pinned axis meets the nrCols-scaled minimum tier', () => {
-    const props = organicPreset(7)({ count: 40, nrCols: 48 });
+    const props = organicPreset({ seed: 7 })({ count: 40, nrCols: 48 });
     const cardMin = Math.round((8 / 48) * 48);
     for (const { cols, rows } of props) {
       if (cols !== undefined) expect(cols).toBeGreaterThanOrEqual(cardMin);
@@ -52,7 +52,7 @@ describe('organicPreset', () => {
   });
 
   test('scales tiers down for a smaller nrCols', () => {
-    const props = organicPreset(1)({ count: 10, nrCols: 12 });
+    const props = organicPreset({ seed: 1 })({ count: 10, nrCols: 12 });
     for (const { cols, rows } of props) {
       if (cols !== undefined) expect(cols).toBeLessThanOrEqual(12);
       if (rows !== undefined) expect(rows).toBeLessThanOrEqual(12);
