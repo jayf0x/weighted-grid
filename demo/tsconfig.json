@@ -13,7 +13,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "weighted-grid/react": ["../src/react.tsx"],
-      "weighted-grid/presets": ["../src/presets.ts"],
+      "weighted-grid/presets": ["../src/presets/index.ts"],
       "weighted-grid": ["../src/index.ts"]
     }
   },

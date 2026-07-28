@@ -1,68 +1,4 @@
-import type { GridItemProps } from './react';
-
-type PartialGridItem = Partial<GridItemProps>;
-
-/** Args a preset gets to compute defaults from — the same values `Grid` already has on hand. */
-export type PresetArgs = { count: number; nrCols: number; nrRows?: number };
-
-/** Computes default props for all `count` items in one call (not per item — patterns like a
- * running-bond brick or a drifting mosaic need whole-sequence bookkeeping). Explicit props on a
- * `GridItem` always win over whatever a preset returns for that index. */
-export type PresetFn = (args: PresetArgs) => PartialGridItem[];
-
-/** Every built-in preset factory takes its own `Options`, plus a common second arg: a
- * `PartialGridItem` applied to every tile *before* the preset's own computed shape props,
- * so it can default any other `GridItemProps` (`stretch`, `className`, `animateSize`, …) without
- * touching what the preset itself computes. A `GridItem`'s own explicit props still win over both. */
-export type PresetFactory<Options> = (options?: Options, itemDefaults?: PartialGridItem) => PresetFn;
-
-export type MasonPresetOptions = {
-  /** Brick width in columns. */
-  brick?: number;
-};
-
-// assumes nrCols >= brick; a 1-col grid produces overflowing spans.
-/** Running-bond brick: rows of `brick`-wide tiles, alternate rows offset by a half-brick. Needs
- * even `nrCols` for a seamless tiling; odd leaves one empty column per offset row. */
-export const masonPreset: PresetFactory<MasonPresetOptions> =
-  ({ brick = 2 } = {}, itemDefaults = {}) =>
-  ({ count, nrCols }) => {
-    const workCols = nrCols - (nrCols % brick);
-    const bricksPerRow = Math.max(1, workCols / brick);
-    const alignedRow = Array(bricksPerRow).fill(brick);
-    const offsetRow = [brick / 2, ...Array(Math.max(bricksPerRow - 1, 0)).fill(brick), brick / 2];
-
-    const widths: number[] = [];
-    for (let row = 0; widths.length < count; row++) widths.push(...(row % 2 === 0 ? alignedRow : offsetRow));
-
-    return widths.slice(0, count).map((cols) => ({ ...itemDefaults, cols, rows: 1 }));
-  };
-
-// ---- organicPreset: drifting mosaic (runs of similarly-sized tiles, occasional breaks) ----
-
-// seeded hash: pseudo-random in [0,1) for an integer lattice point
-function hash01(seed: number, i: number) {
-  let h = (Math.imul(seed, 0x9e3779b9) ^ Math.imul(i, 0x85ebca6b)) >>> 0;
-  h = Math.imul(h ^ (h >>> 15), 1 | h);
-  h = (h + Math.imul(h ^ (h >>> 7), 61 | h)) ^ h;
-  return ((h ^ (h >>> 14)) >>> 0) / 4294967296;
-}
-
-const smoothstep = (t: number) => t * t * (3 - 2 * t);
-
-// 1D value noise: smooth interpolation between hashed lattice points, so a trend drifts across the
-// sequence instead of jumping independently at every step.
-function makeNoise(seed: number) {
-  return (x: number) => {
-    const i0 = Math.floor(x);
-    const t = smoothstep(x - i0);
-    return hash01(seed, i0) + (hash01(seed, i0 + 1) - hash01(seed, i0)) * t;
-  };
-}
-
-// Tile tiers, as a fraction of `nrCols` rather than an absolute cell count, so the preset scales
-// to any `nrCols` instead of one tuned column count.
-const TIER_FRACTIONS = [8 / 48, 12 / 48, 20 / 48]; // small/medium/large
+import type { PartialGridItem, PresetFactory } from './types';
 
 export type OrganicPresetOptions = {
   seed?: number;
@@ -152,3 +88,27 @@ export const organicPreset: PresetFactory<OrganicPresetOptions> =
 
     return tiles;
   };
+
+// seeded hash: pseudo-random in [0,1) for an integer lattice point
+function hash01(seed: number, i: number) {
+  let h = (Math.imul(seed, 0x9e3779b9) ^ Math.imul(i, 0x85ebca6b)) >>> 0;
+  h = Math.imul(h ^ (h >>> 15), 1 | h);
+  h = (h + Math.imul(h ^ (h >>> 7), 61 | h)) ^ h;
+  return ((h ^ (h >>> 14)) >>> 0) / 4294967296;
+}
+
+const smoothstep = (t: number) => t * t * (3 - 2 * t);
+
+// 1D value noise: smooth interpolation between hashed lattice points, so a trend drifts across the
+// sequence instead of jumping independently at every step.
+function makeNoise(seed: number) {
+  return (x: number) => {
+    const i0 = Math.floor(x);
+    const t = smoothstep(x - i0);
+    return hash01(seed, i0) + (hash01(seed, i0 + 1) - hash01(seed, i0)) * t;
+  };
+}
+
+// Tile tiers, as a fraction of `nrCols` rather than an absolute cell count, so the preset scales
+// to any `nrCols` instead of one tuned column count.
+const TIER_FRACTIONS = [8 / 48, 12 / 48, 20 / 48]; // small/medium/large
