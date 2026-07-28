@@ -4,7 +4,6 @@
 
 [![npm version](https://img.shields.io/npm/v/weighted-grid)](https://www.npmjs.com/package/weighted-grid)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/weighted-grid?label=minzipped)](https://bundlephobia.com/package/weighted-grid)
-[![zero deps](https://img.shields.io/badge/dependencies-0-brightgreen)](./package.json)
 [![types](https://img.shields.io/npm/types/weighted-grid)](./src/react.tsx)
 [![CI](https://github.com/jayf0x/weighted-grid/actions/workflows/ci.yml/badge.svg)](https://github.com/jayf0x/weighted-grid/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/weighted-grid)](./LICENSE)

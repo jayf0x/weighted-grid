@@ -7,12 +7,13 @@ BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 NAME=$(node -p "require('./package.json').name")
 if ! npm view "$NAME" version >/dev/null 2>&1; then
-  echo "✗ $NAME has never been published — run 'bun run bootstrap' first (trusted"
+  echo "✗ $NAME has never been published — run 'bun run repo:bootstrap' first (trusted"
   echo "  publishing can't be configured on npmjs.com until a first version exists)"
   exit 1
 fi
 
 # ── build + typecheck + test ─────────────────────────────────────────────────
+bun run scan
 bun run build
 bun run typecheck
 bun run test

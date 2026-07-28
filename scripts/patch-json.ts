@@ -10,7 +10,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 
-const getVFromV = (version) => {
+const getVFromV = (version: string) => {
   if (!/^(\d+)\.(\d+)\.(\d+)$/.test(version)) {
     console.error(`✗ Invalid package version: ${version}`);
     process.exit(1);

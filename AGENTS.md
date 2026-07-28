@@ -4,7 +4,8 @@ Working notes for agents/contributors on `weighted-grid`.
 
 ## What this is
 
-A React grid (zero runtime deps; `react` is a peer dep) that lays out a weighted, content-agnostic
+A React grid (`react` is a real dependency; currently React-only, see the "Non-React" backlog item)
+that lays out a weighted, content-agnostic
 grid filling its container. See `docs/why.md` for the product rationale. **Read it before making
 structural changes.**
 
@@ -124,7 +125,8 @@ Showcase-specific report. `analyzeDevGrid`/`formatDevReport` are a back-compat s
 
 ## Conventions
 
-- **Zero runtime dependencies** in the published package — keep it that way (react is a peer dep).
+- `react` is a real `dependencies` entry, not a peer dep — the engine (`src/utils.ts`, `src/react.tsx`)
+  imports it directly and there's no non-React entry point today. See `backlog.md`.
 - Sizing is by relative **`weight`** only. No fixed-pixel _item_ sizes — a resizable grid doesn't need
   them (`rowHeight` is the one per-row escape hatch).
 - Rendering is **native CSS Grid**; the JS only computes placement. Don't reimplement layout the
