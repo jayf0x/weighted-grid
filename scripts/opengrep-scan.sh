@@ -25,4 +25,5 @@ echo ""
 opengrep scan \
   --config "$RULES_DIR" \
   --error \
+  --no-git-ignore \
   "${SCAN_TARGETS[@]}"
