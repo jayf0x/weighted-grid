@@ -6,7 +6,7 @@ import {
   analyzeSpans,
   devItems,
   showcaseItems,
-} from '../scripts/dev-report-grid';
+} from '../scripts/dev/dev-report-grid';
 
 const s = (colSpan: number, rowSpan: number) => ({ colSpan, rowSpan });
 

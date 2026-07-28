@@ -15,5 +15,5 @@ Skipped on purpose: `react-props-spreading` fires on this library's core pattern
 `best-practice`/legacy-lifecycle/`i18next`/jwt/insecure-request/styled-components
 rules don't apply — nothing in this codebase does those things.
 
-Re-sync with `scripts/opengrep-rules-sync.sh` (needs a local `semgrep-rules` checkout;
+Re-sync with `config/opengrep/sync-rules.sh` (needs a local `semgrep-rules` checkout;
 edit the file list there if you want to add/drop a rule).

@@ -3,9 +3,9 @@
 // still shares the same major/minor boundary as the latest tagged release.
 //
 // Usage:
-//   scripts/patch-json.mjs              # patch bump (0.1.0 -> 0.1.1)
-//   scripts/patch-json.mjs patch        # same as above, kept for compatibility
-//   PKG_JSON=other.json scripts/patch-json.mjs
+//   scripts/npm/patch-json.ts              # patch bump (0.1.0 -> 0.1.1)
+//   scripts/npm/patch-json.ts patch        # same as above, kept for compatibility
+//   PKG_JSON=other.json scripts/npm/patch-json.ts
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';

@@ -13,17 +13,17 @@
  * `row-height`, has no static tile list to analyze). There is one source of truth per example;
  * nothing here can drift from what's on screen.
  *
- * Run:   bun scripts/dev-report-grid.ts               # every static example
- *        bun scripts/dev-report-grid.ts --case=1       # just cases[1] ("the 2nd example")
- *        bun scripts/dev-report-grid.ts --stretch=0    # override that example's `stretch` prop
- *        bun scripts/dev-report-grid.ts --showcase     # the old Showcase dead-zone report
+ * Run:   bun scripts/dev/dev-report-grid.ts               # every static example
+ *        bun scripts/dev/dev-report-grid.ts --case=1       # just cases[1] ("the 2nd example")
+ *        bun scripts/dev/dev-report-grid.ts --stretch=0    # override that example's `stretch` prop
+ *        bun scripts/dev/dev-report-grid.ts --showcase     # the old Showcase dead-zone report
  * Import: `analyzeCase`/`formatCaseReport` for a single example, `analyzeItems`/`formatReport` for
  * unit tests (see tests/dev-report-grid.test.ts).
  */
 
-import { examples } from '../demo/src/examples';
-import type { Example as Case, ExampleTile as CaseTile } from '../demo/src/typing';
-import type { GridItemProps } from '../src/react';
+import { examples } from '../../demo/src/examples';
+import type { Example as Case, ExampleTile as CaseTile } from '../../demo/src/typing';
+import type { GridItemProps } from '../../src/react';
 import {
   fillDeadZones,
   groupEmptyRects,
@@ -32,7 +32,7 @@ import {
   type Span,
   spanFor,
   stretchCapsOf,
-} from '../src/utils';
+} from '../../src/utils';
 
 /** Static (`kind: 'data'`) examples only — same array shape the old `dev/src/cases` export had. */
 const cases: Case[] = examples

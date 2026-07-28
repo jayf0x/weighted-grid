@@ -31,8 +31,8 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch",
+    "build": "vite build --config config/vite.config.ts",
+    "dev": "vite build --watch --config config/vite.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "test:run": "bun test",
@@ -43,7 +43,7 @@
     "lint:fix": "biome lint --write ./src",
     "demo:dev": "cd demo && bun install && bun run dev",
     "demo:deploy": "bash ./scripts/deploy-pages.sh",
-    "npm:deploy": "bash ./scripts/publish-npm.sh",
+    "npm:deploy": "bash ./scripts/npm/publish-npm.sh",
     "repo:bootstrap": "bash ./scripts/bootstap.sh",
     "size": "size-limit"
   },

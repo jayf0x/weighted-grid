@@ -7,7 +7,7 @@ export type ExampleTile = { kind?: "item" | "void" } & GridItemProps;
 
 /** The subset of `GridProps` an example cares about (no `children`/`className`/`style` — those are
  * fixed by `ExampleSection`). Kept as plain data so both the app shell and
- * `scripts/dev-report-grid.ts` can read an example's setup without touching JSX. */
+ * `scripts/dev/dev-report-grid.ts` can read an example's setup without touching JSX. */
 export type ExampleMeta = Partial<
   Pick<
     GridProps,

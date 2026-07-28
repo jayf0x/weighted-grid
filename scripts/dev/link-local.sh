@@ -3,7 +3,7 @@
 # you can iterate without publishing. Plain copy (not a symlink) so the files' realpath stays inside
 # the app, and react resolves from the app (no duplicate-React / invalid-hook-call).
 #
-# Usage: scripts/link-local.sh [path-to-app]   (default: ../jayf0x.github.io)
+# Usage: scripts/dev/link-local.sh [path-to-app]   (default: ../jayf0x.github.io)
 # Reset:  run `bun install --force` in the app to restore the published package.
 set -euo pipefail
 

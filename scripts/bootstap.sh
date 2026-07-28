@@ -35,7 +35,7 @@ done
 
 echo "== npm bootstrap flow (first publish) =="
 if npm view "$NAME" version >/dev/null 2>&1; then
-  echo "skipped — $NAME already on the registry, use scripts/publish-npm.sh"
+  echo "skipped — $NAME already on the registry, use scripts/npm/publish-npm.sh"
 else
   if ! npm whoami >/dev/null 2>&1; then
     echo "skipped — not logged in to npm, run 'npm login' then re-run this script"

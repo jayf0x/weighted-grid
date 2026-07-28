@@ -80,7 +80,7 @@ Strict source order is always preserved; placement is deterministic.
   preset's code (e.g. `organicPreset`'s noise generator) tree-shakes away for anyone who doesn't
   import it.
 - `tests/` — `react-render.test.tsx` (SSR output), `span-for.test.ts` (span math + `fillDeadZones`
-  fairness/caps), `dev-report-grid.test.ts` (QA baselines via `scripts/dev-report-grid.ts`).
+  fairness/caps), `dev-report-grid.test.ts` (QA baselines via `scripts/dev/dev-report-grid.ts`).
 - `demo/` — the released React+TypeScript (Vite) app, importing the library from source. Not part of
   the published package. See the `demo/` section below.
 
@@ -97,6 +97,25 @@ allocator (`src/core.ts`, `layoutGrid`). Those were removed in favour of the sin
 - **The rewrite/deletion landed in commit `62448ea`** ("iteration-4") — its diff is the minimal "how
   to re-add modes later" reference.
 
+## Repo layout
+
+- `./config/` — `vite.config.ts`, out of the root to cut visual clutter (`package.json`'s `build`/`dev`
+  scripts pass `--config` explicitly). `config/biome.json` holds the real Biome config; the root
+  `biome.json` is a 2-line stub (`{ "root": true, "extends": ["./config/biome.json"] }`) — Biome 2.x's
+  explicit `--config-path` refuses to treat a config living outside the actual project root as the
+  *root* config (tested — errors "not a root configuration"/"nested root configuration"), but an
+  `extends` stub at the real root works transparently for both the CLI and editor LSP, no
+  `--config-path`/`biome.lsp.configurationPath` override needed anywhere. `config/opengrep/` holds the
+  vendored security-scan rules (`config/opengrep/rules/*.yaml`) and their own `sync-rules.sh` re-sync
+  helper — `scripts/opengrep-scan.sh` (which stays in `scripts/`, it's the CI-invoked entry point)
+  points `RULES_DIR` there. `tsconfig.json` stays at root: TS/editor tooling auto-discovers it there
+  by convention, and moving it would cost IDE intellisense for a cosmetic win.
+- `./scripts/` — daily/CI scripts only (`bootstap.sh`, `deploy-pages.sh`, `opengrep-scan.sh`).
+  `./scripts/dev/` holds occasional-use dev tools (`dev-report-grid.ts`, `link-local.sh`) that aren't
+  part of the CI/release path. `./scripts/npm/` groups the release flow (`publish-npm.sh`,
+  `patch-json.ts`, `release-notes.ts`) — `publish-npm.sh` finds its siblings via `dirname "$0"`, so
+  they move together as one unit.
+
 ## Commands
 
 ```bash
@@ -105,12 +124,12 @@ bun run typecheck   # tsc --noEmit
 bun run build       # vite lib build → dist/ (index + react + presets entries)
 bun run format      # biome check --write
 cd demo && bun run typecheck && bunx vite build   # verify the demo typechecks and compiles
-bun scripts/dev-report-grid.ts            # QA: every demo/src/examples static entry — holes, missed-stretch, fillComponent tiles
-bun scripts/dev-report-grid.ts --case=1   # QA: just examples[1] ("the 2nd example") — the "read this before judging a screenshot" report
-scripts/link-local.sh        # build + copy dist/ into ../jayf0x.github.io/node_modules (local test)
+bun scripts/dev/dev-report-grid.ts            # QA: every demo/src/examples static entry — holes, missed-stretch, fillComponent tiles
+bun scripts/dev/dev-report-grid.ts --case=1   # QA: just examples[1] ("the 2nd example") — the "read this before judging a screenshot" report
+scripts/dev/link-local.sh        # build + copy dist/ into ../jayf0x.github.io/node_modules (local test)
 ```
 
-`scripts/dev-report-grid.ts` analyzes empty space in the span grid from the placement model
+`scripts/dev/dev-report-grid.ts` analyzes empty space in the span grid from the placement model
 (`placeSpans`) — no browser needed since the grid owns explicit placement, so this model equals
 what the DOM renders. It imports `demo/src/examples` directly (`Example[]` entries, filtered to the
 `kind: 'data'` ones — plain data, no JSX), so the report can never drift from what the demo app
@@ -154,7 +173,7 @@ from inside `demo/`. `@/*` is aliased to `demo/src/*` (see `vite.config.ts` + `t
 
 - `demo/src/examples/*` — one folder per example, added by pushing an entry onto
   `demo/src/examples/index.ts`'s ordered `ExampleEntry[]` list — the single array both the app shell
-  (`App.tsx`) and `scripts/dev-report-grid.ts` import, so there's no way for the visual and the QA
+  (`App.tsx`) and `scripts/dev/dev-report-grid.ts` import, so there's no way for the visual and the QA
   report to disagree about an example's setup. Two shapes, both count as "an example":
   - **Static data** (`prop-matrix/`, `pinned-spans/`): an `Example` (`{ title, meta, tiles }`, types
     in `demo/src/typing.ts`) where `meta` is the `<Grid>` props in effect and `tiles` is a list of
@@ -166,7 +185,7 @@ from inside `demo/`. `@/*` is aliased to `demo/src/*` (see `vite.config.ts` + `t
     it) and `organic-mosaic/` (real-looking card tiles from `demo/public/organic/`, laid out via the
     library's `organicPreset`, no controls, no void tiles) — both export a component instead of
     data.
-  `scripts/dev-report-grid.ts` only analyzes the `kind: 'data'` entries.
+  `scripts/dev/dev-report-grid.ts` only analyzes the `kind: 'data'` entries.
 - `demo/src/components/` — shared per-tile visuals (`Item`/`Void`/`Filler`/`Title`), the info toggle
   (`Header`), and `ExampleSection` (turns one static `Example` into a `<Grid>`). `Item`/`Void` take
   an `infoMode: "simple" | "dev"` prop, lifted in `App.tsx` from a single global toggle — "how much
@@ -175,7 +194,7 @@ from inside `demo/`. `@/*` is aliased to `demo/src/*` (see `vite.config.ts` + `t
   bespoke tile markup — extend these instead.
 - `demo/src/App.tsx` maps `examples` to sections, one per entry, in order.
 
-To ask an agent "look at the 2nd example": `bun scripts/dev-report-grid.ts --case=1` gives the exact
+To ask an agent "look at the 2nd example": `bun scripts/dev/dev-report-grid.ts --case=1` gives the exact
 `Grid` props, tile count, and an ASCII occupancy map (holes vs. stretch-closable vs. stuck) without
 a browser; `demo/src/examples/<name>/index.ts(x)` gives the exact props/data that produced it.
 Screenshot the running app (`bun run dev` inside `demo/`) for the visual.

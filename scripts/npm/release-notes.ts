@@ -8,7 +8,7 @@
  * - `README.md`    — the top-3 table inside the `WHATSNEW` taglify block: new row on top, previous
  *                    two kept as-is.
  *
- * Usage: `bun scripts/release-notes.ts 1.6.0`. Never fatal — a failed/missing `claude` just warns,
+ * Usage: `bun scripts/npm/release-notes.ts 1.6.0`. Never fatal — a failed/missing `claude` just warns,
  * so a release is never blocked on it.
  */
 import { $ } from 'bun';
@@ -18,7 +18,7 @@ const CHANGELOG = './CHANGELOG.md';
 const README = './README.md';
 
 const version = process.argv[2];
-if (!version) throw new Error('usage: bun scripts/release-notes.ts <version>');
+if (!version) throw new Error('usage: bun scripts/npm/release-notes.ts <version>');
 
 const warn = (msg: string) => console.warn(`! release notes skipped — ${msg}`);
 

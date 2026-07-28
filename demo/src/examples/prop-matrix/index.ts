@@ -2,7 +2,7 @@ import type { Example } from '@/typing';
 
 /** Exhaustive weight/cols/rows/strict matrix — every combination of pinned/elastic axes side by
  * side, static. Ported verbatim from `dev/src/cases/1-default.ts` (`defaultCase`); tile data is
- * unchanged so `scripts/dev-report-grid.ts`'s existing QA baselines keep meaning the same thing. */
+ * unchanged so `scripts/dev/dev-report-grid.ts`'s existing QA baselines keep meaning the same thing. */
 export const propMatrixExample: Example = {
   title: 'prop matrix — weight / cols / rows / strict',
   meta: { nrCols: 10, gap: 5, stretch: 4 },

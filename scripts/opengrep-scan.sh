@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # ── Configuration ──────────────────────────────────────────────────────────────
-RULES_DIR="$REPO_ROOT/.opengrep/rules"
+RULES_DIR="$REPO_ROOT/config/opengrep/rules"
 SCAN_TARGETS=("$REPO_ROOT/src" "$REPO_ROOT/demo/src")
 # ──────────────────────────────────────────────────────────────────────────────
 
