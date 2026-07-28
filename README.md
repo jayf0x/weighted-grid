@@ -42,9 +42,9 @@ and not trying to be — want that? [Open an issue](https://github.com/jayf0x/we
 <!-- WHATSNEW:START -->
 | Version | Highlights |
 | ------- | ---------- |
+| `1.5.3` | Preset API improvements: named types and enhanced flexibility |
 | `1.5.2` | Internal changes only |
 | `1.5.1` | Internal changes only                                                                                   |
-| `1.5.0` | 🎨 **Presets** — `masonPreset` / `organicPreset` on the `weighted-grid/presets` subpath                 |
 <!-- WHATSNEW:END -->
 
 Full history in [CHANGELOG.md](./CHANGELOG.md).

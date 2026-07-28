@@ -1,4 +1,4 @@
-import type { GridItemProps } from "./react";
+import type { GridItemProps } from './react';
 
 type PartialGridItem = Partial<GridItemProps>;
 
@@ -14,10 +14,7 @@ export type PresetFn = (args: PresetArgs) => PartialGridItem[];
  * `PartialGridItem` applied to every tile *before* the preset's own computed shape props,
  * so it can default any other `GridItemProps` (`stretch`, `className`, `animateSize`, …) without
  * touching what the preset itself computes. A `GridItem`'s own explicit props still win over both. */
-export type PresetFactory<Options> = (
-  options?: Options,
-  itemDefaults?: PartialGridItem,
-) => PresetFn;
+export type PresetFactory<Options> = (options?: Options, itemDefaults?: PartialGridItem) => PresetFn;
 
 export type MasonPresetOptions = {
   /** Brick width in columns. */
@@ -33,19 +30,12 @@ export const masonPreset: PresetFactory<MasonPresetOptions> =
     const workCols = nrCols - (nrCols % brick);
     const bricksPerRow = Math.max(1, workCols / brick);
     const alignedRow = Array(bricksPerRow).fill(brick);
-    const offsetRow = [
-      brick / 2,
-      ...Array(Math.max(bricksPerRow - 1, 0)).fill(brick),
-      brick / 2,
-    ];
+    const offsetRow = [brick / 2, ...Array(Math.max(bricksPerRow - 1, 0)).fill(brick), brick / 2];
 
     const widths: number[] = [];
-    for (let row = 0; widths.length < count; row++)
-      widths.push(...(row % 2 === 0 ? alignedRow : offsetRow));
+    for (let row = 0; widths.length < count; row++) widths.push(...(row % 2 === 0 ? alignedRow : offsetRow));
 
-    return widths
-      .slice(0, count)
-      .map((cols) => ({ ...itemDefaults, cols, rows: 1 }));
+    return widths.slice(0, count).map((cols) => ({ ...itemDefaults, cols, rows: 1 }));
   };
 
 // ---- organicPreset: drifting mosaic (runs of similarly-sized tiles, occasional breaks) ----
@@ -90,19 +80,16 @@ export type OrganicPresetOptions = {
 export const organicPreset: PresetFactory<OrganicPresetOptions> =
   ({ seed = 1, size: sizeMult = 1 } = {}, itemDefaults = {}) =>
   ({ count, nrCols }) => {
-    const tierSizes = TIER_FRACTIONS.map((f) =>
-      Math.max(2, Math.round(f * sizeMult * nrCols)),
-    );
+    const tierSizes = TIER_FRACTIONS.map((f) => Math.max(2, Math.round(f * sizeMult * nrCols)));
     const cardMin = tierSizes[0];
-    const tierFor = (n: number) =>
-      tierSizes[Math.floor(n * tierSizes.length) % tierSizes.length];
+    const tierFor = (n: number) => tierSizes[Math.floor(n * tierSizes.length) % tierSizes.length];
 
     const sizeNoise = makeNoise(seed); // drifting "how big is this patch of tiles" trend
     const modeNoise = makeNoise(seed + 101); // drifting "which axis stays pinned" trend
     const pick = makeNoise(seed + 303); // per-tile jitter/picks, not a trend
 
     const tiles: PartialGridItem[] = [];
-    let prevKey = "";
+    let prevKey = '';
 
     for (let i = 0; i < count; i++) {
       const size = sizeNoise(i / 5); // patches ~5 tiles wide
@@ -158,13 +145,8 @@ export const organicPreset: PresetFactory<OrganicPresetOptions> =
     }
 
     for (const { cols, rows } of tiles) {
-      if (
-        (cols !== undefined && cols < cardMin) ||
-        (rows !== undefined && rows < cardMin)
-      ) {
-        throw new Error(
-          `organicPreset: tile thinner than the ${cardMin}-cell minimum`,
-        );
+      if ((cols !== undefined && cols < cardMin) || (rows !== undefined && rows < cardMin)) {
+        throw new Error(`organicPreset: tile thinner than the ${cardMin}-cell minimum`);
       }
     }
 

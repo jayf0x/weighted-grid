@@ -3,6 +3,11 @@
 All notable changes to `weighted-grid`. Dates are release dates; versions follow
 [semver](https://semver.org/).
 
+## 1.5.3 — 2026-07-28
+
+- Export named types for presets
+- Expand preset configuration flexibility
+
 ## 1.5.2 — 2026-07-28
 
 - Internal and tooling changes only.
