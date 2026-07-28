@@ -22,7 +22,7 @@ describe('masonPreset', () => {
   });
 
   test('brick size is configurable via the factory', () => {
-    const props = masonPreset(4)({ count: 4, nrCols: 8 });
+    const props = masonPreset({ brick: 4 })({ count: 4, nrCols: 8 });
     expect(props[0].cols).toBe(4);
     expect(props[4]?.cols).toBeUndefined(); // only 4 items requested
   });

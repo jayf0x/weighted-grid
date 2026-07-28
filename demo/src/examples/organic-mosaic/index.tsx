@@ -36,7 +36,7 @@ export function OrganicMosaicExample({ infoMode }: { infoMode: InfoMode }) {
           className="h-full w-full"
         >
           {Array.from({ length: TILE_COUNT }, (_, i) => (
-            <GridItem key={i} stretch={10}>
+            <GridItem key={i}>
               <Card index={i} />
             </GridItem>
           ))}
