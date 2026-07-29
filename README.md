@@ -10,18 +10,15 @@
 
 <!-- README_HEAD:END -->
 
-**Weight in, layout out.** 🧩
+**Weight in, layout out.**
 
-Say how _big_ each item should feel — not where it goes. The grid places everything in source
-order, fills its container, and grows elastic items into leftover space so you don't end up
-staring at a hole an item could have filled. Native CSS Grid does the rendering; the JS only
-decides spans.
+Say how big each item should feel, not where it goes. The grid places items in source order,
+fills the container, and grows elastic items into whatever space is left. Native CSS Grid does
+the rendering; the JS only decides spans.
 
 ![Preview](./assets/preview.png)
 
 **[▶ Play with the live demo](https://jayf0x.github.io/weighted-grid/)**
-
-> ⭐ Star the [repo](https://github.com/jayf0x/weighted-grid) if this saved you an afternoon.
 
 ## Why not just CSS Grid?
 
@@ -57,8 +54,6 @@ bun add weighted-grid   # npm / pnpm / yarn all fine
 
 ## Quick start
 
-One prop. That's the whole entry fee.
-
 ```tsx
 import { Grid, GridItem } from "weighted-grid/react";
 
@@ -70,8 +65,8 @@ import { Grid, GridItem } from "weighted-grid/react";
 </Grid>;
 ```
 
-`weight` works like flexbox `flex`: _how much of the grid do I get_. Equal weights → equal
-squares. No coordinates, no breakpoints, no math.
+`weight` works like flexbox `flex`: how much of the grid does this item get. Equal weights give
+equal squares.
 
 ## The mental model
 

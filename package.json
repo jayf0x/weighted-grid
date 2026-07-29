@@ -2,7 +2,7 @@
   "name": "weighted-grid",
   "version": "1.6.0",
   "type": "module",
-  "description": "Weight in, layout out — a React grid that sizes items by relative weight, stretches them fairly into empty space, and renders as native CSS Grid. Bento, masonry and dashboard layouts without coordinates.",
+  "description": "A React grid that sizes items by relative weight and fills empty space automatically, rendered as native CSS Grid.",
   "author": "jayF0x",
   "license": "MIT",
   "module": "./dist/index.js",
