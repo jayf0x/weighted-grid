@@ -4,10 +4,10 @@ import { useCallback, useMemo, useState } from 'react';
    Controls
 
    A schema in, typed values + a rendered panel out. Three control kinds, on
-   purpose: a plate that needs a fourth is a plate trying to be documentation.
+   purpose: a case that needs a fourth is a case trying to be documentation.
 
-   Not Leva: Leva owns its own DOM and theme, and every plate here lives inside
-   a drafting-plate design that a floating dark panel would fight. This is ~120
+   Not Leva: Leva owns its own DOM and theme, and every case here lives inside
+   a drafting-case design that a floating dark panel would fight. This is ~120
    lines and reuses the page's own tokens, which is cheaper than skinning
    someone else's panel and more honest than pretending it's configurable.
    ───────────────────────────────────────────────────────────────────────────── */
@@ -173,7 +173,7 @@ function Row({
         >
           <span
             className={
-              'absolute top-px bottom-px left-px w-3 transition-[translate,background-color] duration-200 ease-plate ' +
+              'absolute top-px bottom-px left-px w-3 transition-[translate,background-color] duration-200 ease-out-quart ' +
               (on ? 'translate-x-4 bg-accent' : 'bg-ink-3')
             }
           />

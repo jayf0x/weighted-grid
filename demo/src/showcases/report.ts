@@ -1,9 +1,9 @@
 import type { GridItemProps, GridProps } from 'weighted-grid/react';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Plain-data plates.
+   Plain-data cases.
 
-   Two plates are *reference* layouts rather than toys — the exhaustive prop
+   Two cases are *reference* layouts rather than toys — the exhaustive prop
    matrix and the pinned-span grid. Their tiles are data, not JSX, so
    `scripts/dev/dev-report-grid.ts` can analyze exactly what the page renders
    without a browser, and the QA baselines in `tests/dev-report-grid.test.ts`
@@ -13,7 +13,7 @@ import type { GridItemProps, GridProps } from 'weighted-grid/react';
 /** One tile: `kind` picks the visual, everything else goes straight to `<GridItem>`. */
 export type ReportTile = { kind?: 'item' | 'void' } & GridItemProps;
 
-/** The `<Grid>` props a data plate declares. Everything else is fixed by the plate. */
+/** The `<Grid>` props a data case declares. Everything else is fixed by the case. */
 export type ReportMeta = Partial<Pick<GridProps, 'nrCols' | 'nrRows' | 'rowHeight' | 'gap' | 'stretch' | 'showGrid'>>;
 
 export type ReportCase = { title: string; meta: ReportMeta; tiles: ReportTile[] };
@@ -48,24 +48,28 @@ export const propMatrix: ReportCase = {
   ],
 };
 
-/** The default span grid: exact `cols`/`rows` spans mixed with plain weighted squares, so the
- * dead-zone pass has something real to work on. */
+/** A span grid with deliberate dead zones: strict tiles (both axes pinned) boxing in a handful of
+ * elastic ones, so there is real leftover space for `stretch` to close and for `fillComponent` to
+ * plug. Tuned against `bun scripts/dev/dev-report-grid.ts --case=1 --stretch=0`. */
 export const pinnedSpans: ReportCase = {
-  title: 'span grid — exact cols/rows mixed with weighted squares',
-  meta: { nrCols: 6, gap: 6 },
+  title: 'span grid — strict tiles boxing in elastic ones',
+  meta: { nrCols: 8, gap: 6, stretch: 0 },
   tiles: [
     { kind: 'item', cols: 3, rows: 2 },
-    { kind: 'item', cols: 2 },
-    { kind: 'item' },
-    { kind: 'item' },
-    { kind: 'item' },
-    { kind: 'item' },
-    { kind: 'item' },
-    { kind: 'item' },
-    { kind: 'item' },
+    { kind: 'item', cols: 2, rows: 3 },
+    { kind: 'item', weight: 1 },
+    { kind: 'item', cols: 2, rows: 1 },
+    { kind: 'item', cols: 1, rows: 2 },
+    { kind: 'item', weight: 1 },
+    { kind: 'item', cols: 4, rows: 1 },
+    { kind: 'item', weight: 2 },
+    { kind: 'item', cols: 1, rows: 3 },
+    { kind: 'item', weight: 1 },
+    { kind: 'item', cols: 3, rows: 1 },
+    { kind: 'item', weight: 1 },
   ],
 };
 
-/** Every data plate, in plate order — the array `scripts/dev/dev-report-grid.ts` addresses with
+/** Every data case, in case order — the array `scripts/dev/dev-report-grid.ts` addresses with
  * `--case=N`. */
 export const reportCases: ReportCase[] = [propMatrix, pinnedSpans];

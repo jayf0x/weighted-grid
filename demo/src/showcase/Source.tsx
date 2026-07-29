@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-/** The plate's own source, as a specimen listing.
+/** The case's own source, as a specimen listing.
  *
  * Deliberately not syntax-highlighted: every highlighter worth using (shiki, prism) is either a
  * build step or a runtime dependency several times the size of the library this page is about, and
@@ -23,7 +23,7 @@ export function Source({ code, id }: { code: string; id: string }) {
         >
           <span
             aria-hidden
-            className="inline-block transition-transform duration-300 ease-plate"
+            className="inline-block transition-transform duration-300 ease-out-quart"
             style={{ transform: isOpen ? 'rotate(90deg)' : 'none' }}
           >
             ▸

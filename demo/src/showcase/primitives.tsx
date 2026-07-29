@@ -8,7 +8,7 @@ export const Hatch = ({ className, ...props }: ComponentProps<'div'>) => (
   <div aria-hidden className={clsx('hatch h-full w-full border-x border-rule', className)} {...props} />
 );
 
-/** Crop marks. Four corner ticks that frame a stage the way a drafting plate frames a drawing —
+/** Crop marks. Four corner ticks that frame a stage the way a drafting case frames a drawing —
  * cheaper and quieter than a full border, and it survives content bleeding to the edge. */
 export const CropMarks = ({ className }: { className?: string }) => (
   <div aria-hidden className={clsx('pointer-events-none absolute inset-0 z-10', className)}>
@@ -30,17 +30,18 @@ export const Spec = ({ children, className }: { children: ReactNode; className?:
   <span className={clsx('spec', className)}>{children}</span>
 );
 
-/** A prop name, rendered as code. Plates list the API surface they're actually about. */
+/** A prop name, rendered as code. Each case lists the API surface it's actually about. */
 export const PropChip = ({ children }: { children: ReactNode }) => (
   <code className="border border-rule bg-tint px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{children}</code>
 );
 
-/** "PLATE 03/06" — the page is a set of plates, and the number is how you refer to one out loud. */
-export const PlateBadge = ({ index, total }: { index: number; total: number }) => {
+/** "CASE 03/05" — the page is a set of numbered cases, and the number is how you refer to one
+ * out loud, in a review or in a prompt. */
+export const CaseBadge = ({ index, total }: { index: number; total: number }) => {
   const pad = (n: number) => String(n).padStart(2, '0');
   return (
     <span className="spec text-accent">
-      plate {pad(index)}
+      case {pad(index)}
       <span className="text-ink-3">/{pad(total)}</span>
     </span>
   );

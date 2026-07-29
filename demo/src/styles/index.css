@@ -3,10 +3,10 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    weighted-grid — "SPEC SHEET"
 
-   A drafting plate: warm paper or deep ink, hairlines that bleed past the
-   content column to the viewport edge, diagonal hatch for negative space,
-   didone plate titles, mono for every measured value. Nothing decorative that
-   isn't also a ruler.
+   A drafting sheet: warm paper or deep ink, hairlines that bleed past the
+   content column to the viewport edge, diagonal hatch for negative space and
+   for the page margins, didone case titles, mono for every measured value.
+   Nothing decorative that isn't also a ruler.
    ───────────────────────────────────────────────────────────────────────────── */
 
 /* Theme is a class on <html>: `light` | `dark` | `system` (see index.html's
@@ -45,7 +45,6 @@
   --accent: oklch(0.585 0.185 38);
   --accent-soft: color-mix(in oklab, var(--accent) 14%, transparent);
 
-  --stage: 62vh;
 }
 
 .light {
@@ -100,7 +99,7 @@
   --font-display: "Bodoni Moda", "Didot", Georgia, serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 
-  --ease-plate: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-quart: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ── Hairlines that bleed past the content column ─────────────────────────────
@@ -133,6 +132,11 @@
   background-position: top left;
 }
 
+/* ── Display headings: the didone face wants real weight at these sizes ─────── */
+@utility headline {
+  @apply font-display font-semibold tracking-[-0.02em];
+}
+
 /* ── Mono spec label: the tiny uppercase caption on every measured thing ────── */
 @utility spec {
   @apply font-mono text-[10px] leading-none tracking-[0.16em] text-ink-3 uppercase;
@@ -141,7 +145,12 @@
 @layer base {
   html {
     scroll-behavior: smooth;
-    /* the sticky plate header parks right under the top rule */
+    /* `line-t`/`line-b` draw their rules with a 200vw pseudo-element so they run to the viewport
+       edge from inside the content column. That overflows the page horizontally unless something
+       clips it. `clip` rather than `hidden`: `hidden` makes the element a scroll container, which
+       silently breaks `position: sticky` on the top bar. */
+    overflow-x: clip;
+    /* the sticky top bar parks right above an anchored case */
     scroll-padding-top: 5.5rem;
   }
 
@@ -189,7 +198,7 @@
     margin-top: -6.5px;
     border-radius: 0;
     background: var(--accent);
-    transition: transform 120ms var(--ease-plate);
+    transition: transform 120ms var(--ease-out-quart);
   }
   input[type="range"]::-moz-range-thumb {
     width: 3px;

@@ -1,6 +1,6 @@
 /** Deterministic starting weights.
  *
- * Every plate that opens on a weighted mosaic uses this instead of `Math.random`: the first thing
+ * Every case that opens on a weighted mosaic uses this instead of `Math.random`: the first thing
  * a visitor sees is a designed layout, identical on every load, and screenshots stay comparable
  * between runs. Mixture is roughly 12% heavy, 30% medium, the rest unit-sized — enough variety to
  * read as a mosaic without any single tile dominating. */

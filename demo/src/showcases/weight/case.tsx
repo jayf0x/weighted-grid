@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
 import { Grid, GridItem } from 'weighted-grid/react';
+import { CaseFrame } from '@/showcase/Case';
 import { range, useControls } from '@/showcase/controls';
 import { useSquareRows } from '@/showcase/hooks';
-import { PlateFrame } from '@/showcase/Plate';
-import type { Plate } from '@/showcase/types';
+import type { Case } from '@/showcase/types';
 import { seededWeight } from '../seed';
 import { Tile } from '../tiles';
 
@@ -27,14 +27,13 @@ function Weight() {
   const cycle = (i: number) => setWeights((w) => ({ ...w, [i]: (weightOf(i) % 4) + 1 }));
 
   return (
-    <PlateFrame
+    <CaseFrame
       height="auto"
       controls={
         <>
           {panel}
           <p className="mt-5 border-t border-rule pt-3 text-[13px] leading-relaxed text-ink-3">
-            Click any tile to cycle its weight 1 → 4 — the ones you have touched stay inked. Every other tile re-flows
-            around it; source order never changes.
+            Click any tile to cycle its weight 1 → 4. The ones you touch stay inked.
           </p>
         </>
       }
@@ -57,11 +56,11 @@ function Weight() {
           })}
         </Grid>
       </div>
-    </PlateFrame>
+    </CaseFrame>
   );
 }
 
-export const plate: Plate = {
+export const showcase: Case = {
   id: 'weight',
   title: 'One number',
   lede: 'weight is flexbox flex, in two dimensions: how much of the grid do I get. Pin nothing and it drives both axes, so equal weights are equal squares.',

@@ -2,10 +2,10 @@ import { Grid, GridItem, type GridProps } from 'weighted-grid/react';
 import type { ReportCase } from './report';
 import { Tile, Void } from './tiles';
 
-/** Renders a plain-data plate. One renderer for every `ReportCase`, so a data plate can never grow
+/** Renders a plain-data case. One renderer for every `ReportCase`, so a data case can never grow
  * bespoke markup that the QA script doesn't know about. */
 export function DataGrid({ data, ...overrides }: { data: ReportCase } & Omit<GridProps, 'children'>) {
-  // same rule as the other plates: no caption in a cell too small to hold one
+  // same rule as the other cases: no caption in a cell too small to hold one
   const hasLabels = typeof overrides.rowHeight !== 'number' || overrides.rowHeight >= 44;
   return (
     <Grid animateSize animatePosition {...data.meta} {...overrides}>

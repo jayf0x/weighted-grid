@@ -149,7 +149,7 @@ bun run typecheck   # tsc --noEmit
 bun run build       # vite lib build → dist/ (index + react + core + presets entries)
 bun run format      # biome check --write
 cd demo && bun run typecheck && bunx vite build   # verify the demo typechecks and compiles
-bun scripts/dev/dev-report-grid.ts            # QA: every data plate — holes, missed-stretch, fillComponent tiles
+bun scripts/dev/dev-report-grid.ts            # QA: every data case — holes, missed-stretch, fillComponent tiles
 bun scripts/dev/dev-report-grid.ts --case=1   # QA: just reportCases[1] — the "read this before judging a screenshot" report
 scripts/dev/link-local.sh        # build + copy dist/ into ../jayf0x.github.io/node_modules (local test)
 ```
@@ -198,8 +198,13 @@ library from source via the `weighted-grid`/`weighted-grid/react`/`weighted-grid
 `demo/vite.config.ts`, so it tracks local changes. Not part of the published package. `bun run dev` /
 `bun run build` / `bun run typecheck` from inside `demo/`. `@/*` is aliased to `demo/src/*`.
 
-See `demo/DESIGN.md` for the design system (the "spec sheet" direction, tokens, type scale) and for
-why the layer split below exists — this section documents *what* is there, that doc explains *why*.
+See `demo/DESIGN.md` for the design system (the "spec sheet" direction, tokens, motion budget) and
+for why the layer split below exists — this section documents *what* is there, that doc explains
+*why*.
+
+The unit of the page is a **case** (as in showcase), numbered "CASE 03/05". Not "plate", not "story",
+not "example" — one word, used in the types, the folder names, the badge, and `--case=N` on the QA
+script.
 
 ## The two layers
 
@@ -208,40 +213,54 @@ frontend required to showcase anything**. The second half is written so it can b
 another project unchanged.
 
 - `demo/src/showcase/` — **the template layer.** Knows nothing about grids.
-  - `types.ts` — `Plate` (`{ id, title, lede, props?, Component }`), `PlateIndex`. A plate is one
-    idea with a live thing and two or three knobs — *not* a story with an args table.
-  - `Plate.tsx` — `PlateFrame` (stage left, caption/controls/source right, sticky on wide screens)
-    + `PlateProvider`. A plate component owns its state and renders `<PlateFrame>`; its *identity*
+  - `types.ts` — `Case` (`{ id, title, lede, props?, Component }`), `CaseIndex`, `CaseRegistry`.
+  - `Case.tsx` — `CaseFrame` (stage left, caption/controls/source right, sticky on wide screens) +
+    `CaseProvider`. A case component owns its state and renders `<CaseFrame>`; its *identity*
     (title, number, source) arrives through context from the page, so the page never reaches into a
-    plate to render its controls elsewhere.
+    case to render its controls elsewhere.
   - `controls.tsx` — schema in, typed values + a rendered panel out. Three kinds only (`range`,
-    `toggle`, `segment`); a plate needing a fourth is a plate trying to be documentation. Not Leva:
+    `toggle`, `segment`); a case needing a fourth is a case trying to be documentation. Not Leva:
     Leva ships its own DOM and theme, which this design would have to fight, and this is ~180 lines
     against the page's own tokens.
-  - `Source.tsx` — the plate's own source as a numbered listing, with copy. Deliberately not
+  - `Source.tsx` — the case's own source as a numbered listing, with copy. Deliberately not
     syntax-highlighted (see the file's own comment).
-  - `Rail.tsx` — margin ruler + `useActivePlate` scroll spy. `Backdrop.tsx` — dot lattice, vignette,
-    and the pointer-tracking CAD crosshair. `theme.tsx` — three-way light/auto/dark, painted before
-    first paint by the inline `_setTheme` in `index.html`. `primitives.tsx` — `Hatch`, `CropMarks`,
-    `Spec`, `PropChip`, `PlateBadge`. `hooks.ts` — `useWidth`, `useSquareRows`.
-- `demo/src/showcases/` — **the repo-specific layer.** One folder per plate.
-  - Add a plate: write `demo/src/showcases/<id>/plate.tsx` exporting `plate: Plate`, then add its id
+  - `Backdrop.tsx` — hatched margins flanking the content column (the Tailwind-site 315° gradient
+    between hairlines, `bg-fixed`), a vignette, and the pointer-tracking CAD crosshair. The margins
+    are anchored to `calc(50% + 40rem)`, i.e. half of `App.tsx`'s 80rem column — **change one and
+    change the other.**
+  - `Rail.tsx` — margin ruler + `useActiveCase` scroll spy. `theme.tsx` — three-way light/auto/dark
+    (lucide icons), painted before first paint by the inline `_setTheme` in `index.html`.
+    `icons.tsx` — the two brand marks lucide dropped. `primitives.tsx` — `Hatch`, `CropMarks`,
+    `Spec`, `PropChip`, `CaseBadge`. `hooks.ts` — `useWidth`, `useSquareRows`.
+- `demo/src/showcases/` — **the repo-specific layer.** One folder per case.
+  - Add a case: write `demo/src/showcases/<id>/case.tsx` exporting `showcase: Case`, then add its id
     to `ORDER` in `demo/src/showcases/index.ts`. Both the module and its raw source are globbed
-    (`import.meta.glob`), so "here is the source" costs nothing per plate.
-  - `Hero.tsx` — the library laying out its own hero, re-weighting one tile every few seconds
-    (paused for reduced-motion and hidden tabs). `tiles.tsx` — `Tile`/`Void`/`Filler`, monochrome so
-    layouts read as *shape*. `seed.ts` — deterministic opening weights, so first impressions and
-    screenshots are stable. `DataGrid.tsx` — the one renderer for plain-data plates.
-  - `report.ts` — the two *reference* plates (`propMatrix`, `pinnedSpans`) as plain data, exported
-    as `reportCases`. `scripts/dev/dev-report-grid.ts` imports this exact array, so its QA report and
-    the rendered page can never disagree; `--case=N` indexes it.
+    (`import.meta.glob`), so "here is the source" costs nothing per case.
+  - `Hero.tsx` — the library laying out its own hero, and the only place with real content: a few
+    photographs and a few runs of text among mostly-blank tiles, re-weighting one blank tile every
+    few seconds (paused for reduced motion and hidden tabs). Content tiles carry `stretch={0}` and a
+    minimum weight so a photo is never a postage stamp and a sentence never clips.
+  - `tiles.tsx` — `Tile`/`Void`/`Filler`, monochrome so layouts read as *shape*. `seed.ts` —
+    deterministic opening weights, so first impressions and screenshots are stable. `DataGrid.tsx` —
+    the one renderer for plain-data cases.
+  - `report.ts` — the two *reference* cases (`propMatrix`, `pinnedSpans`) as plain data, exported as
+    `reportCases`. `scripts/dev/dev-report-grid.ts` imports this exact array, so its QA report and
+    the rendered page can never disagree; `--case=N` indexes it. `pinnedSpans` is tuned so the
+    stretch case has real dead zones across the whole range of its cap — retune it against
+    `--case=1 --stretch=0` if you change it.
 
 `useSquareRows` deserves a note: `rowHeight="auto"` divides *container height* into bands, which is
 right for a grid fitting a box but wrong for a specimen — with few rows it stretches every tile into
-a sliver and `weight={2}` stops looking like twice as much. Most plates therefore measure the stage
-and pass a px `rowHeight` equal to the column width, which makes cells square.
+a sliver and `weight={2}` stops looking like twice as much. Most cases therefore measure the stage
+and pass a px `rowHeight` equal to the column width. The hero keeps `auto` (it has a designed
+height) and controls its aspect through *tile count* instead — which is why it renders fewer tiles
+on a narrow stage.
 
-To ask an agent "look at plate 02": `bun scripts/dev/dev-report-grid.ts --case=0` gives the exact
+`overflow-x: clip` on `html` (not `hidden`, which would break the sticky top bar) is load-bearing:
+`line-t`/`line-b` draw their full-bleed rules with a 200vw pseudo-element, which overflows the page
+horizontally without it.
+
+To ask an agent "look at case 03": `bun scripts/dev/dev-report-grid.ts --case=1` gives the exact
 `Grid` props, tile count, and an ASCII occupancy map (holes vs. stretch-closable vs. stuck) without a
-browser; `demo/src/showcases/<id>/plate.tsx` gives the exact props that produced it. Screenshot the
+browser; `demo/src/showcases/<id>/case.tsx` gives the exact props that produced it. Screenshot the
 running app (`bun run dev` inside `demo/`) for the visual.

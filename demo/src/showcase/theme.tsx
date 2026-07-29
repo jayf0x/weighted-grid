@@ -1,3 +1,4 @@
+import { Monitor, Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export type Theme = 'light' | 'system' | 'dark';
@@ -37,11 +38,11 @@ export function useIsDark() {
   return dark;
 }
 
-const OPTIONS: { value: Theme; label: string }[] = [
-  { value: 'light', label: 'day' },
-  { value: 'system', label: 'auto' },
-  { value: 'dark', label: 'night' },
-];
+const OPTIONS = [
+  { value: 'light', label: 'Light', Icon: Sun },
+  { value: 'system', label: 'System', Icon: Monitor },
+  { value: 'dark', label: 'Dark', Icon: Moon },
+] as const;
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>('system');
@@ -52,28 +53,30 @@ export function ThemeToggle() {
     // free from the platform, and re-implementing it on buttons is how that behaviour gets lost
     <fieldset className="flex gap-px bg-rule p-px">
       <legend className="sr-only">Colour scheme</legend>
-      {OPTIONS.map((o) => {
-        const active = theme === o.value;
+      {OPTIONS.map(({ value, label, Icon }) => {
+        const active = theme === value;
         return (
           <label
-            key={o.value}
+            key={value}
+            title={label}
             className={
-              'spec cursor-pointer px-2 py-1.5 transition-colors duration-150 has-focus-visible:outline has-focus-visible:outline-accent ' +
+              'flex cursor-pointer items-center p-1.5 transition-colors duration-150 has-focus-visible:outline has-focus-visible:outline-accent ' +
               (active ? 'bg-accent text-paper' : 'bg-paper text-ink-3 hover:text-ink')
             }
           >
             <input
               type="radio"
               name="theme"
-              value={o.value}
+              value={value}
               checked={active}
               onChange={() => {
-                window._setTheme(o.value);
-                setTheme(o.value);
+                window._setTheme(value);
+                setTheme(value);
               }}
               className="sr-only"
             />
-            {o.label}
+            <Icon className="size-3.5" strokeWidth={1.75} />
+            <span className="sr-only">{label}</span>
           </label>
         );
       })}

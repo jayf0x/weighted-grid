@@ -1,10 +1,10 @@
-import type { Plate } from '@/showcase/types';
+import type { Case } from '@/showcase/types';
 
-/* Every plate lives in `src/showcases/<id>/plate.tsx` and exports one `plate`. Both the module and
- * its own source text are globbed here, so adding a plate is: write the file, add its id to ORDER.
- * The raw glob is what makes "here is the source" free — no per-plate `?raw` import to forget. */
-const modules = import.meta.glob('./*/plate.tsx', { eager: true }) as Record<string, { plate: Plate }>;
-const sources = import.meta.glob('./*/plate.tsx', {
+/* Every case lives in `src/showcases/<id>/case.tsx` and exports one `showcase`. Both the module and
+ * its own source text are globbed here, so adding a case is: write the file, add its id to ORDER.
+ * The raw glob is what makes "here is the source" free — no per-case `?raw` import to forget. */
+const modules = import.meta.glob('./*/case.tsx', { eager: true }) as Record<string, { showcase: Case }>;
+const sources = import.meta.glob('./*/case.tsx', {
   eager: true,
   query: '?raw',
   import: 'default',
@@ -12,17 +12,18 @@ const sources = import.meta.glob('./*/plate.tsx', {
 
 /** Reading order. Explicit rather than alphabetical: the page opens on the single idea the library
  * is built around and only then earns the right to talk about edge cases. */
-const ORDER = ['weight', 'pinning', 'stretch', 'presets', 'responsive', 'row-height'] as const;
+const ORDER = ['weight', 'pinning', 'stretch', 'presets', 'responsive'] as const;
 
-const byId = new Map(Object.entries(modules).map(([path, m]) => [m.plate.id, { plate: m.plate, path }]));
+const byId = new Map(Object.values(modules).map((m) => [m.showcase.id, m.showcase]));
+const pathById = new Map(Object.entries(modules).map(([path, m]) => [m.showcase.id, path]));
 
-export const plates: Plate[] = ORDER.map((id) => {
+export const cases: Case[] = ORDER.map((id) => {
   const found = byId.get(id);
-  if (!found) throw new Error(`No plate exports id "${id}" — check src/showcases/${id}/plate.tsx`);
-  return found.plate;
+  if (!found) throw new Error(`No case exports id "${id}" — check src/showcases/${id}/case.tsx`);
+  return found;
 });
 
 export const sourceOf = (id: string): string | undefined => {
-  const found = byId.get(id);
-  return found ? sources[found.path] : undefined;
+  const path = pathById.get(id);
+  return path ? sources[path] : undefined;
 };

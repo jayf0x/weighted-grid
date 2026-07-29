@@ -1,7 +1,8 @@
+import { GripVertical } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Grid, GridItem } from 'weighted-grid/react';
-import { PlateFrame } from '@/showcase/Plate';
-import type { Plate } from '@/showcase/types';
+import { CaseFrame } from '@/showcase/Case';
+import type { Case } from '@/showcase/types';
 import { Tile } from '../tiles';
 
 const TILES = 22;
@@ -10,7 +11,7 @@ const GAP = 6;
 
 /** Real breakpoints, not a checkbox pretending to be one: drag the handle and the stage genuinely
  * narrows, `nrCols` drops with it, and the same children reflow. A toggle would have been half the
- * code and none of the point — the thing worth feeling here is continuity, not two screenshots. */
+ * code and none of the point — what's worth feeling here is continuity, not two screenshots. */
 function Responsive() {
   const hostRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState<number | null>(null);
@@ -49,25 +50,25 @@ function Responsive() {
   };
 
   return (
-    <PlateFrame
+    <CaseFrame
       height="auto"
       controls={
         <div>
-          <div className="flex items-baseline justify-between">
+          <p className="mb-4 flex items-center gap-2 border border-accent/40 bg-accent-soft px-3 py-2.5 text-[13px] text-accent">
+            <GripVertical className="size-4 shrink-0" />
+            Drag the orange edge of the stage.
+          </p>
+          <div className="flex items-baseline justify-between border-t border-rule pt-3">
             <span className="spec">measured</span>
-            <span className="font-mono text-[13px] tabular-nums text-ink">
+            <span className="font-mono text-[13px] text-ink tabular-nums">
               {Math.round(w)}
               <span className="text-ink-3">px</span>
             </span>
           </div>
           <div className="mt-3 flex items-baseline justify-between border-t border-rule pt-3">
             <span className="spec">nrCols</span>
-            <span className="font-mono text-[13px] tabular-nums text-accent">{nrCols}</span>
+            <span className="font-mono text-[13px] text-accent tabular-nums">{nrCols}</span>
           </div>
-          <p className="mt-5 border-t border-rule pt-3 text-[13px] leading-relaxed text-ink-3">
-            Drag the right edge of the stage. One prop changes; there is no second layout to maintain, no mobile branch,
-            and source order is identical at every width.
-          </p>
         </div>
       }
     >
@@ -82,36 +83,34 @@ function Responsive() {
             ))}
           </Grid>
 
-          {/* the handle: a ruled edge you can grab, not an OS resize corner */}
+          {/* The handle. Inked rather than grey: a hairline nobody notices is a control nobody
+              finds, and this is the only case whose whole point is an interaction. */}
           <button
             type="button"
             aria-label="Resize stage"
             onPointerDown={onDrag}
-            className="absolute top-0 -right-3 h-full w-6 cursor-ew-resize touch-none bg-transparent"
+            className="group absolute top-0 -right-4 h-full w-8 cursor-ew-resize touch-none bg-transparent"
           >
+            <span className="absolute top-0 left-1/2 h-full w-px bg-accent" />
             <span
               className={
-                'absolute top-0 left-1/2 h-full w-px transition-colors duration-200 ' +
-                (isDragging ? 'bg-accent' : 'bg-rule-strong hover:bg-accent')
+                'absolute top-1/2 left-1/2 flex h-12 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center text-paper transition-transform duration-200 ease-out-quart ' +
+                (isDragging ? 'scale-110 bg-accent' : 'bg-accent group-hover:scale-110')
               }
-            />
-            <span
-              className={
-                'absolute top-1/2 left-1/2 h-8 w-[3px] -translate-x-1/2 -translate-y-1/2 transition-colors duration-200 ' +
-                (isDragging ? 'bg-accent' : 'bg-ink-3')
-              }
-            />
+            >
+              <GripVertical className="size-3.5" />
+            </span>
           </button>
         </div>
       </div>
-    </PlateFrame>
+    </CaseFrame>
   );
 }
 
-export const plate: Plate = {
+export const showcase: Case = {
   id: 'responsive',
   title: 'One prop, every width',
-  lede: 'Responsiveness is a column count. Feed nrCols from a breakpoint and the same children, in the same order, resolve into a layout that suits the width.',
+  lede: 'Responsiveness is a column count. Feed nrCols from a breakpoint and the same children, in the same order, resolve into a layout that suits the width — no second layout to maintain.',
   props: ['nrCols'],
   Component: Responsive,
 };
