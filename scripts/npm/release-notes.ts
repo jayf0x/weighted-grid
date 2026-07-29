@@ -89,18 +89,25 @@ if (firstEntry === -1) {
 }
 
 // ── README.md ────────────────────────────────────────────────────────────────
-// Keep the two previous rows verbatim; the model only ever writes the new one. Any stale row for
-// this same version is dropped rather than duplicated.
-const readme = await Bun.file(README).text();
-const rows = (taglRead(readme, 'WHATSNEW') ?? '')
-  .split('\n')
-  .filter((line) => line.trim().startsWith('| `') && !line.trim().startsWith(`| \`${version}\``));
-const table = [
-  '| Version | Highlights |',
-  '| ------- | ---------- |',
-  `| \`${version}\` | ${notes.highlight} |`,
-  ...rows.slice(0, 2),
-].join('\n');
-taglText(readme, { WHATSNEW: table }).write(README);
+// The table is user-facing highlights, not a full version log — an internal-only release doesn't
+// get a row (it'd just burn a highlight slot on nothing). Keep the two previous rows verbatim; the
+// model only ever writes the new one. Any stale row for this same version is dropped rather than
+// duplicated.
+const isInternalOnly = notes.highlight.trim().toLowerCase() === 'internal changes only';
+if (isInternalOnly) {
+  console.log(`✓ release notes for ${version} written to CHANGELOG.md (internal-only, README table unchanged)`);
+} else {
+  const readme = await Bun.file(README).text();
+  const rows = (taglRead(readme, 'WHATSNEW') ?? '')
+    .split('\n')
+    .filter((line) => line.trim().startsWith('| `') && !line.trim().startsWith(`| \`${version}\``));
+  const table = [
+    '| Version | Highlights |',
+    '| ------- | ---------- |',
+    `| \`${version}\` | ${notes.highlight} |`,
+    ...rows.slice(0, 2),
+  ].join('\n');
+  taglText(readme, { WHATSNEW: table }).write(README);
 
-console.log(`✓ release notes for ${version} written to CHANGELOG.md + README.md`);
+  console.log(`✓ release notes for ${version} written to CHANGELOG.md + README.md`);
+}

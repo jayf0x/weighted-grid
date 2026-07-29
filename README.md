@@ -43,8 +43,8 @@ and not trying to be — want that? [Open an issue](https://github.com/jayf0x/we
 | Version | Highlights |
 | ------- | ---------- |
 | `1.5.3` | Preset API improvements: named types and enhanced flexibility |
-| `1.5.2` | Internal changes only |
-| `1.5.1` | Internal changes only                                                                                   |
+| `1.5.0` | New `preset` prop with `masonPreset`/`organicPreset`, tree-shakeable subpath |
+| `1.4.0` | Per-item stretch caps override the grid-level default |
 <!-- WHATSNEW:END -->
 
 Full history in [CHANGELOG.md](./CHANGELOG.md).
