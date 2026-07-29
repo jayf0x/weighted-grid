@@ -3,6 +3,11 @@
 All notable changes to `weighted-grid`. Dates are release dates; versions follow
 [semver](https://semver.org/).
 
+## 1.6.0 — 2026-07-29
+
+- **Breaking:** React is now a peer dependency instead of being bundled
+- Core placement engine available as separate `weighted-grid/core` export
+
 ## 1.5.3 — 2026-07-28
 
 - Export named types for presets
