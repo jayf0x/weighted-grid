@@ -190,9 +190,12 @@ export function Hero({ version }: { version: string }) {
       </div>
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.97 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.9, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+        // opacity only, deliberately: this wrapper contains a self-measuring grid, and a `scale`
+        // here rescales every FLIP measurement taken while it eases — tiles glitch into place for
+        // reasons that have nothing to do with layout
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.9, delay: 0.25 }}
         className="h-[min(58vh,32rem)] min-w-0"
       >
         <Specimen />

@@ -32,7 +32,7 @@ function Stretch() {
   const stretch = values.stretch === CAP_MAX ? Number.POSITIVE_INFINITY : values.stretch;
 
   return (
-    <CaseFrame height="auto" controls={panel}>
+    <CaseFrame controls={panel}>
       <div ref={stageRef}>
         <DataGrid
           data={pinnedSpans}

@@ -88,6 +88,32 @@ Two rules the cases follow, learned the hard way:
   lede already said, delete it. The only prose that survives is prose that enables an interaction —
   "click a tile", "drag the orange edge".
 
+## Fixed stages
+
+Each case's stage is a fixed-height box with `overflow: hidden`. The controls exist to change how
+much grid there is, and a content-sized stage turns every slider drag into a page reflow — scroll
+position jumps, the sticky caption slides, the case below moves. Clipping is the cheaper trade by a
+long way: nobody needs to see the 40th tile, and everybody notices the page moving under them. A
+short bottom fade keeps the cut reading as a window rather than a bug.
+
+## Motion that stays subtle
+
+Two things were making the FLIP transitions misbehave, and both are fixed in the library rather
+than papered over here:
+
+1. **Measurement was viewport-relative.** `getBoundingClientRect()` absorbs anything that moves the
+   grid as a whole — page scroll, an ancestor mid-transform — so tiles glitched in sync with things
+   that had nothing to do with layout. Boxes are now measured relative to the grid container, where
+   whatever moves container and child together contributes zero.
+2. **The delta was unbounded.** FLIP replays a layout change as the transform that undoes it, so
+   dragging `nrCols` from 9 to 3 started every tile hundreds of pixels away, flying in from outside
+   the stage. Past ~1.5× an item's own size, it now snaps: at that scale it isn't a transition,
+   it's a different layout.
+
+The rule that follows for this page: **no `transform` on anything wrapping a `<Grid>`.** A
+translating ancestor cancels out, but a scaling one still rescales the deltas — so the hero's reveal
+is opacity-only.
+
 ## Square cells
 
 `rowHeight="auto"` splits the container height into bands. That is right when a grid has to fit a

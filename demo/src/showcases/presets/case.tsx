@@ -37,7 +37,7 @@ function Presets() {
   );
 
   return (
-    <CaseFrame height="auto" controls={panel}>
+    <CaseFrame controls={panel}>
       <div ref={stageRef}>
         <Grid nrCols={NR_COLS} gap={GAP} rowHeight={rowHeight} preset={preset} animateSize animatePosition>
           {Array.from({ length: COUNT }, (_, i) => (

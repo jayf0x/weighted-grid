@@ -123,15 +123,67 @@ const gridLinesStyle = (nrCols: number, rowCount: number, gapCss: string): CSSPr
 
 const FLIP_MS = 200;
 
+/** Past this much movement, snapping beats animating.
+ *
+ * FLIP replays a layout change as the transform that would undo it, so a *big* change means a big
+ * transform: change `nrCols` from 9 to 3 and every tile starts hundreds of pixels from where it
+ * belongs, flying in from outside the grid. That isn't a transition anyone asked to watch — at that
+ * scale it's a different layout, and it should just appear. Expressed as a multiple of the item's
+ * own size so it scales with the grid instead of being a magic pixel count. */
+const FLIP_MAX_TRAVEL = 1.5;
+
+/** Same idea for `animateSize`: a tile that has to grow more than this snaps instead. */
+const FLIP_MAX_SCALE = 2.5;
+
+/** An item's box relative to the grid container. */
+export type FlipBox = { left: number; top: number; width: number; height: number };
+
+/**
+ * The whole FLIP *policy*, as a pure function: given where an item was and where it now is, what
+ * transform (if any) should play it back? Split out from the effect so the decision — including
+ * both snap thresholds — is unit-testable without a DOM. `null` means "don't animate, just snap".
+ *
+ * Not part of the public API; exported for `tests/react-render.test.tsx`.
+ */
+export const flipTransform = (
+  prev: FlipBox,
+  next: FlipBox,
+  animateSize: boolean,
+  animatePosition: boolean,
+): string | null => {
+  if (!next.width || !next.height) return null;
+
+  const dx = animatePosition ? prev.left - next.left : 0;
+  const dy = animatePosition ? prev.top - next.top : 0;
+  const sx = animateSize ? prev.width / next.width : 1;
+  const sy = animateSize ? prev.height / next.height : 1;
+  if (!dx && !dy && sx === 1 && sy === 1) return null;
+
+  // too big a jump to read as motion — let it snap
+  const travel = Math.max(Math.abs(dx) / next.width, Math.abs(dy) / next.height);
+  const scale = Math.max(sx, sy, 1 / sx, 1 / sy);
+  if (travel > FLIP_MAX_TRAVEL || scale > FLIP_MAX_SCALE) return null;
+
+  return `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
+};
+
 /**
  * FLIP transition for `animateSize`/`animatePosition`: CSS Grid line/span values aren't natively
  * interpolable, so instead of animating layout, this measures each item's box before/after a render
  * and plays the delta back as a `transform` (scale for size, translate for position) that eases to
  * identity. Returns a per-item ref-callback factory; call it once per rendered item with a stable key.
+ *
+ * Boxes are measured **relative to the grid container**, not the viewport. `getBoundingClientRect()`
+ * is viewport-relative, so a viewport-relative delta silently absorbs anything that moved the grid
+ * as a whole between two renders — page scroll, and any ancestor mid-transform (a `motion.div`
+ * easing in, a reveal animation). Both showed up as items glitching or jumping in sync with
+ * something that had nothing to do with layout. Subtracting the container's own rect cancels it:
+ * whatever moves container and child together contributes 0.
  */
 const useFlip = (animateSize: boolean, animatePosition: boolean) => {
+  const hostRef = useRef<HTMLDivElement | null>(null);
   const nodesRef = useRef<Map<string, HTMLDivElement> | undefined>(undefined);
-  const rectsRef = useRef<Map<string, DOMRect> | undefined>(undefined);
+  const rectsRef = useRef<Map<string, FlipBox> | undefined>(undefined);
   // Ref callbacks are cached per key and reused across renders — a fresh closure every render would
   // give React a new ref identity each time, forcing a detach/reattach cycle for every item on every
   // render for no reason.
@@ -147,42 +199,55 @@ const useFlip = (animateSize: boolean, animatePosition: boolean) => {
       rects.clear();
       return;
     }
+    const host = hostRef.current?.getBoundingClientRect();
+    if (!host) return;
+
     for (const [key, el] of nodesRef.current!) {
-      const next = el.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      // container-relative, so scroll and ancestor transforms cancel out
+      const next: FlipBox = { left: r.left - host.left, top: r.top - host.top, width: r.width, height: r.height };
       const prev = rects.get(key);
-      if (prev && next.width && next.height) {
-        const dx = animatePosition ? prev.left - next.left : 0;
-        const dy = animatePosition ? prev.top - next.top : 0;
-        const sx = animateSize ? prev.width / next.width : 1;
-        const sy = animateSize ? prev.height / next.height : 1;
-        if (dx || dy || sx !== 1 || sy !== 1) {
-          el.style.transition = 'none';
-          el.style.transformOrigin = 'top left';
-          el.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
-          el.getBoundingClientRect(); // flush, so the reset below actually transitions
-          el.style.transition = `transform ${FLIP_MS}ms ease`;
-          el.style.transform = '';
-        }
-      }
       rects.set(key, next);
+      if (!prev) continue;
+
+      const transform = flipTransform(prev, next, animateSize, animatePosition);
+      if (!transform) continue;
+
+      el.style.transition = 'none';
+      el.style.transformOrigin = 'top left';
+      el.style.transform = transform;
+      el.getBoundingClientRect(); // flush, so the reset below actually transitions
+      el.style.transition = `transform ${FLIP_MS}ms ease`;
+      el.style.transform = '';
     }
+
+    // Prune what's no longer mounted. Detach can't do this (see `itemRef`), and by the time this
+    // effect runs React has already settled the refs, so `nodes` is exactly the live set.
+    const nodes = nodesRef.current!;
+    for (const key of rects.keys()) if (!nodes.has(key)) rects.delete(key);
+    for (const key of refFnsRef.current!.keys()) if (!nodes.has(key)) refFnsRef.current!.delete(key);
   });
 
-  return (key: string) => {
+  // The cached callback must survive detach. Evicting it here (as this used to) made the cache
+  // self-defeating: one detach — which StrictMode guarantees on mount by remounting every effect —
+  // dropped the callback, so the next render handed React a fresh identity, which forced another
+  // detach, which dropped it again. Every render then arrived with an empty rect map and FLIP had
+  // no `prev` to animate from, so it either did nothing or fired off a rect captured at some
+  // arbitrary earlier moment. Keeping the identity stable is the whole point; only the measurement
+  // is per-mount state, and `rects` is re-seeded by the effect on the very next pass anyway.
+  const itemRef = (key: string) => {
     let fn = refFnsRef.current!.get(key);
     if (!fn) {
       fn = (el) => {
         if (el) nodesRef.current!.set(key, el);
-        else {
-          nodesRef.current!.delete(key);
-          rectsRef.current!.delete(key);
-          refFnsRef.current!.delete(key);
-        }
+        else nodesRef.current!.delete(key);
       };
       refFnsRef.current!.set(key, fn);
     }
     return fn;
   };
+
+  return { hostRef, itemRef };
 };
 
 export const Grid = memo((props: GridProps) => {
@@ -242,11 +307,11 @@ export const Grid = memo((props: GridProps) => {
     ...style,
   };
 
-  const flipRef = useFlip(animateSize, animatePosition);
+  const { hostRef, itemRef } = useFlip(animateSize, animatePosition);
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: arbitrary weighted layout, not tabular data — a real <table> would force row/column semantics the content doesn't have.
-    <div className={className} style={containerStyles} role="grid">
+    <div ref={hostRef} className={className} style={containerStyles} role="grid">
       {items.map((item, i) => {
         const p = placed[i];
         const key = String(item.key ?? i);
@@ -254,7 +319,7 @@ export const Grid = memo((props: GridProps) => {
           // biome-ignore lint/a11y/useSemanticElements: see role="grid" above.
           <div
             key={key}
-            ref={flipRef(key)}
+            ref={itemRef(key)}
             role="gridcell"
             tabIndex={0}
             style={{

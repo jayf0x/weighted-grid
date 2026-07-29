@@ -28,7 +28,6 @@ function Weight() {
 
   return (
     <CaseFrame
-      height="auto"
       controls={
         <>
           {panel}

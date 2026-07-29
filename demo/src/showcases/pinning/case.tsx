@@ -19,7 +19,7 @@ function Pinning() {
   const stageRef = useRef<HTMLDivElement>(null);
   const rowHeight = useSquareRows(stageRef, values.nrCols, values.gap);
   return (
-    <CaseFrame height="auto" controls={panel}>
+    <CaseFrame controls={panel}>
       <div ref={stageRef}>
         <DataGrid
           data={propMatrix}

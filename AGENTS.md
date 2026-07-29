@@ -55,7 +55,16 @@ different things in the same JSX block was a real, reported point of confusion; 
 - **`animateSize`/`animatePosition`** — opt-in FLIP transforms (`useFlip` in `src/react.tsx`) for
   smooth size/position transitions on re-layout. CSS Grid line/span values aren't natively
   interpolable, so this measures each item's box pre/post-render and plays the delta back as a
-  `transform` that eases to identity — not a real grid-track animation. Off by default.
+  `transform` that eases to identity — not a real grid-track animation. Off by default. Two things
+  the implementation must keep doing, both regressions that shipped once: boxes are measured
+  **relative to the grid container**, not the viewport (a viewport-relative delta absorbs page
+  scroll and any ancestor mid-transform, so items glitch for reasons unrelated to layout); and the
+  delta is **capped** — past `FLIP_MAX_TRAVEL`/`FLIP_MAX_SCALE` the item snaps, because replaying a
+  whole-grid reflow as a transform starts every item outside the container. The policy lives in the
+  pure `flipTransform()` so it's testable without a DOM (`tests/react-render.test.tsx`). The per-key
+  ref callbacks must also stay cached **across detach** — evicting them made the cache self-defeating
+  (fresh identity → forced detach → evict → repeat), which left FLIP with no previous box to animate
+  from at all.
 - **`preset`** — a `PresetFn` (`({ count, nrCols, nrRows }) => Partial<GridItemProps>[]`) that
   computes default props per item; explicit `GridItem` props still win. `src/presets.ts` ships
   `masonPreset`/`organicPreset`, exported only from the `weighted-grid/presets` subpath so unused
@@ -249,12 +258,24 @@ another project unchanged.
     stretch case has real dead zones across the whole range of its cap — retune it against
     `--case=1 --stretch=0` if you change it.
 
+**The stage is a fixed box and its content is clipped** (`HEIGHTS` in `Case.tsx`, `overflow-hidden`,
+plus a short fade so the cut reads as a window rather than a bug). Every case has controls that
+change how much grid there is, and with an auto-height stage each of those re-flowed the whole page
+under the reader — scroll jumped, the sticky caption slid, the next case moved. Nobody needs to see
+the 40th tile; everybody notices the page moving. Don't reintroduce a content-sized stage.
+
 `useSquareRows` deserves a note: `rowHeight="auto"` divides *container height* into bands, which is
 right for a grid fitting a box but wrong for a specimen — with few rows it stretches every tile into
-a sliver and `weight={2}` stops looking like twice as much. Most cases therefore measure the stage
-and pass a px `rowHeight` equal to the column width. The hero keeps `auto` (it has a designed
-height) and controls its aspect through *tile count* instead — which is why it renders fewer tiles
-on a narrow stage.
+a sliver and `weight={2}` stops looking like twice as much. Cases therefore measure the stage and
+pass a px `rowHeight` equal to the column width. The hero keeps `auto` (it has a designed height)
+and controls its aspect through *tile count* instead — which is why it renders fewer tiles on a
+narrow stage.
+
+**Don't put a `transform` on anything that wraps a `<Grid>`** — `scale` especially. The grid's FLIP
+measures item boxes relative to its own container, which cancels page scroll and any ancestor
+*translation*, but a scaling ancestor still rescales the deltas. Reveal animations around a grid
+should be opacity-only (the hero's is); transforms belong on leaf text, as in
+`jayf0x.github.io/src/pages/Home/Hero.tsx`.
 
 `overflow-x: clip` on `html` (not `hidden`, which would break the sticky top bar) is load-bearing:
 `line-t`/`line-b` draw their full-bleed rules with a 200vw pseudo-element, which overflows the page

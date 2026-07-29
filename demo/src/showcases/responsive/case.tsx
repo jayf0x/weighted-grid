@@ -8,6 +8,8 @@ import { Tile } from '../tiles';
 const TILES = 22;
 const WIDE = new Set([2, 9, 15]);
 const GAP = 6;
+// the handle straddles the stage's right edge; the stage clips, so reserve its half-width
+const HANDLE_HALF = 16;
 
 /** Real breakpoints, not a checkbox pretending to be one: drag the handle and the stage genuinely
  * narrows, `nrCols` drops with it, and the same children reflow. A toggle would have been half the
@@ -22,7 +24,7 @@ function Responsive() {
     const el = hostRef.current;
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
-      const w = entry.contentRect.width;
+      const w = entry.contentRect.width - HANDLE_HALF;
       setMax(w);
       setWidth((cur) => (cur === null ? w : Math.min(cur, w)));
     });
@@ -51,7 +53,6 @@ function Responsive() {
 
   return (
     <CaseFrame
-      height="auto"
       controls={
         <div>
           <p className="mb-4 flex items-center gap-2 border border-accent/40 bg-accent-soft px-3 py-2.5 text-[13px] text-accent">

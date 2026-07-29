@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Grid, GridItem } from '../src/react';
+import { flipTransform, Grid, GridItem } from '../src/react';
 
 // Regression: a user reported <Grid> rendering empty, unweighted cells with a dev-only profiler
 // (Million Lint) enabled, which wraps every JSX element in an instrumentation component —
@@ -343,5 +343,41 @@ describe('Grid (SSR render)', () => {
         }
       }
     }
+  });
+});
+
+describe('flipTransform (FLIP policy)', () => {
+  const box = (left: number, top: number, width = 100, height = 100) => ({ left, top, width, height });
+
+  test('an unchanged box animates nothing', () => {
+    expect(flipTransform(box(0, 0), box(0, 0), true, true)).toBeNull();
+  });
+
+  test('a small nudge plays back as the transform that undoes it', () => {
+    // moved 20px right and 10px down → transform starts 20/10 back and eases to identity
+    expect(flipTransform(box(0, 0), box(20, 10), false, true)).toBe('translate(-20px, -10px) scale(1, 1)');
+  });
+
+  test('each flag only drives its own axis of the transform', () => {
+    // size-only ignores the move; position-only ignores the resize
+    expect(flipTransform(box(0, 0, 50, 50), box(20, 0, 100, 100), true, false)).toBe(
+      'translate(0px, 0px) scale(0.5, 0.5)',
+    );
+    expect(flipTransform(box(0, 0, 50, 50), box(20, 0, 100, 100), false, true)).toBe(
+      'translate(-20px, 0px) scale(1, 1)',
+    );
+  });
+
+  test('a jump too large to read as motion snaps instead of flying in', () => {
+    // this is the `nrCols` slider case: every tile lands hundreds of px from where it was, and
+    // replaying that as a transform starts it outside the grid
+    expect(flipTransform(box(0, 0), box(400, 0), false, true)).toBeNull();
+    expect(flipTransform(box(0, 0, 100, 100), box(0, 0, 10, 10), true, false)).toBeNull();
+    // …but a jump just inside the threshold still animates
+    expect(flipTransform(box(0, 0), box(140, 0), false, true)).not.toBeNull();
+  });
+
+  test('a zero-sized box is skipped rather than dividing by zero', () => {
+    expect(flipTransform(box(0, 0), box(0, 0, 0, 0), true, true)).toBeNull();
   });
 });
