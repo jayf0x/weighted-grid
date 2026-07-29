@@ -4,10 +4,10 @@ Working notes for agents/contributors on `weighted-grid`.
 
 ## What this is
 
-A React grid (`react` is a real dependency; currently React-only, see the "Non-React" backlog item)
-that lays out a weighted, content-agnostic
-grid filling its container. See `docs/why.md` for the product rationale. **Read it before making
-structural changes.**
+A React grid — `react` is a **peer dependency** — that lays out a weighted, content-agnostic grid
+filling its container. The placement engine itself is framework-agnostic (`weighted-grid/core`, see
+below); React is only the one renderer that ships today. See `docs/why.md` for the product
+rationale. **Read it before making structural changes.**
 
 ## Intended usage / mental model
 
@@ -67,20 +67,44 @@ Strict source order is always preserved; placement is deterministic.
 
 ## Layout
 
-- `src/react.tsx` — `<Grid>` / `<GridItem>` and the whole engine. `spanFor` maps each item to a
-  col/row span; the grid owns placement (`placeSpans`, strict order, explicit `grid-column`/`grid-row`
-  lines), grows elastic axes into the gaps (`fillDeadZones`), then renders `fillComponent` into
-  whatever holes are left, merged via `groupEmptyRects`.
-- `src/utils.ts` — placement + render helpers: `spanFor`, `placeSpans`, `packedRowCount`,
-  `fillDeadZones` (fair round-robin growth, per-axis via `elasticityOf`), `groupEmptyRects` (merges
-  leftover holes into rectangular filler blocks), `toCss`, `asGridItems`.
-- `src/index.ts` — package entry; re-exports `Grid`/`GridItem` + types from `./react`.
+- `src/core.ts` — the whole placement engine, **JSX-free, zero `react` import** — its own entry
+  point/build target (`weighted-grid/core`). `spanFor` maps each item to a col/row span; `placeSpans`
+  owns placement (strict order, explicit col/row starts+spans); `fillDeadZones` grows elastic axes
+  into the gaps (fair round-robin growth, per-axis via `stretchCapsOf`); `groupEmptyRects` merges
+  leftover holes into rectangular filler blocks. `computeLayout` ties all four into the one call a
+  non-React renderer needs (span → place → stretch → merge gaps) — the same thing `<Grid>` calls
+  internally, so there's exactly one implementation of the engine, not two kept in sync by hand.
+  Only types like `SpanProps`/`StretchProps` here are the minimal shape the engine reads (`weight`/
+  `cols`/`rows`/`stretch`/`stretchX`/`stretchY`) — `GridItemProps` (`./react`) is a superset.
+- `src/react.tsx` — `<Grid>` / `<GridItem>`, the one shipping renderer on top of `./core`. Turns JSX
+  children into item props (`asGridItems`, `./utils`), calls `computeLayout`, then renders the
+  result as native CSS Grid (`grid-column`/`grid-row` lines) plus `fillComponent` into the returned
+  `fillerRects`.
+- `src/utils.ts` — React-only helper: `asGridItems` (JSX children → ordered `GridItem` element list).
+  Everything framework-agnostic lives in `src/core.ts` instead.
+- `src/index.ts` — package entry; re-exports `Grid`/`GridItem` + types from `./react`. `react` is a
+  **peer dependency**, not bundled — `weighted-grid/core` has no such peer and works anywhere.
 - `src/presets.ts` — `PresetFn` and the built-in presets (`masonPreset`, `organicPreset`). Its own
   entry point/build target (`weighted-grid/presets`), not re-exported from `src/index.ts`, so a
   preset's code (e.g. `organicPreset`'s noise generator) tree-shakes away for anyone who doesn't
-  import it.
+  import it. **Mission: grow this list.** `masonPreset`/`organicPreset` are two points in a much
+  larger space of "auto-assign weight/cols/rows so the grid fills itself" algorithms — treemap/
+  squarified layouts, stacking/packing algorithms (the removed `pre-simplify-1.2.0` engine, see
+  "History" below, is prior art, not a spec to restore verbatim), bin-packing heuristics, etc. Before
+  building one: **research first** — what shape does it actually produce, does an existing library
+  (`d3-hierarchy`'s `treemap`, or similar) already solve the hard part, and does that library's API
+  even map cleanly onto "per-item `weight`/`cols`/`rows`" or does it need its own richer preset
+  options (like `masonPreset`/`organicPreset` already take). No committed design yet — that's the
+  point of researching before writing the preset. Whatever ships must stay tree-shakable per preset
+  (a heavier algorithm, e.g. one vendoring `d3-hierarchy`, could dwarf `core`'s own size) — if a
+  preset's dependency is large, give it its own build entry/subpath instead of bundling it into the
+  shared `weighted-grid/presets` entry, so anyone not importing it pays nothing.
 - `tests/` — `react-render.test.tsx` (SSR output), `span-for.test.ts` (span math + `fillDeadZones`
-  fairness/caps), `dev-report-grid.test.ts` (QA baselines via `scripts/dev/dev-report-grid.ts`).
+  fairness/caps, imports `src/core.ts`), `dev-report-grid.test.ts` (QA baselines via
+  `scripts/dev/dev-report-grid.ts`), `dist-imports.test.ts` (smoke-tests the actual built
+  `dist/*.js` entry points — not `src/`  — so a broken `exports` map or an accidentally-bundled
+  `react` fails a test, not just a manual check; `pretest` in `package.json` runs `bun run build`
+  first so `bun run test`/`bun run test:run` always exercise a fresh `dist/`).
 - `demo/` — the released React+TypeScript (Vite) app, importing the library from source. Not part of
   the published package. See the `demo/` section below.
 
@@ -119,9 +143,10 @@ allocator (`src/core.ts`, `layoutGrid`). Those were removed in favour of the sin
 ## Commands
 
 ```bash
-bun test            # run all tests (bun:test)
+bun run test        # bun:test — `pretest` builds first, so this always tests fresh dist/
+bun test            # run tests against whatever's currently in dist/ (no build step)
 bun run typecheck   # tsc --noEmit
-bun run build       # vite lib build → dist/ (index + react + presets entries)
+bun run build       # vite lib build → dist/ (index + react + core + presets entries)
 bun run format      # biome check --write
 cd demo && bun run typecheck && bunx vite build   # verify the demo typechecks and compiles
 bun scripts/dev/dev-report-grid.ts            # QA: every demo/src/examples static entry — holes, missed-stretch, fillComponent tiles

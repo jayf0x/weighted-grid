@@ -2,7 +2,7 @@ import { Grid, GridItem } from 'weighted-grid/react';
 // Dev-only: reaches past the public `weighted-grid`/`weighted-grid/react` entries to compute the
 // *effective* per-item stretch caps for the `dev` info-mode labels below — not part of the
 // published API. Same pattern dev/src/components/CaseSection.tsx used.
-import { stretchCapsOf } from '../../../src/utils';
+import { stretchCapsOf } from '../../../src/core';
 import type { Example, InfoMode } from '@/typing';
 import { Filler } from '@/components/Filler';
 import { Item } from '@/components/Item';

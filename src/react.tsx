@@ -16,17 +16,9 @@ import {
   useMemo,
   useRef,
 } from 'react';
+import { computeLayout, toCss } from './core';
 import type { PresetFn } from './presets';
-import {
-  asGridItems,
-  fillDeadZones,
-  groupEmptyRects,
-  packedRowCount,
-  placeSpans,
-  spanFor,
-  stretchCapsOf,
-  toCss,
-} from './utils';
+import { asGridItems } from './utils';
 
 // `useLayoutEffect` warns when it runs during SSR (`renderToStaticMarkup` etc.); it does nothing
 // there anyway, so fall back to the no-op-safe `useEffect` outside the browser.
@@ -222,36 +214,21 @@ export const Grid = memo((props: GridProps) => {
   const itemProps = presetProps
     ? items.map((item, i) => ({ ...presetProps[i], ...item.props }))
     : items.map((item) => item.props);
-  const gridSpan = itemProps.map((props) => spanFor(props, nrCols));
   const track = rowHeight === 'auto' ? 'minmax(0, 1fr)' : toCss(rowHeight);
-  // `nrRows` is a floor, not a hard cap: `placeSpans` below never wraps on row count (only `nrCols`
-  // wraps), so content that needs more rows than `nrRows` declares still gets placed past it. If
-  // `rowCount` didn't grow to match, every occupancy/stretch/fill computation downstream would size
-  // its tracking arrays too small and silently go blind past that row — items past it would never
-  // stretch, and holes past it would never get `fillComponent`. Auto (`nrRows` omitted) already sizes
-  // exactly to content; an explicit `nrRows` only ever adds headroom above that for stretch to use.
-  const rowCount = Math.max(nrRows ?? 0, packedRowCount(gridSpan, nrCols, false));
-
   // Own placement (strict source order). Gaps are resolved in one pass: grow weight-only items into
-  // dead cells first (fair, capped by `stretch`), then whatever's left gets `fillComponent`.
-  const base = placeSpans(gridSpan, nrCols, false).placements;
-  const placed = fillDeadZones(
-    base,
-    itemProps.map((props) => stretchCapsOf(props, stretch)),
-    nrCols,
+  // dead cells first (fair, capped by `stretch`), then whatever's left gets `fillComponent`. See
+  // `computeLayout` (`./core`) for the framework-agnostic version of this — `nrRows`'s floor-not-cap
+  // semantics are documented there.
+  const {
     rowCount,
-  );
-
-  // Whatever's still empty after stretch, merged into unified rectangular blocks (one fillComponent
-  // tile per gap, not one per cell — the filler has no per-cell identity to preserve).
-  let fillerRects: ReturnType<typeof groupEmptyRects> = [];
-  if (fillComponent != null) {
-    const occ = Array.from({ length: rowCount }, () => new Array<boolean>(nrCols).fill(false));
-    for (const p of placed)
-      for (let r = p.rowStart; r < p.rowStart + p.rowSpan; r++)
-        for (let c = p.colStart; c < p.colStart + p.colSpan; c++) if (occ[r]) occ[r][c] = true;
-    fillerRects = groupEmptyRects(occ, nrCols, rowCount);
-  }
+    placements: placed,
+    fillerRects,
+  } = computeLayout(itemProps, {
+    nrCols,
+    nrRows,
+    stretch,
+    fillGaps: fillComponent != null,
+  });
 
   const gapCss = toCss(gap);
   const containerStyles: CSSProperties = {

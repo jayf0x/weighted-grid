@@ -5,7 +5,7 @@ import { Item } from '@/components/Item';
 import type { InfoMode } from '@/typing';
 import { buildBlocks } from '@/utils/blocks';
 // Dev-only: see ExampleSection.tsx for why this reaches past the public entry points.
-import { stretchCapsOf } from '../../../../src/utils';
+import { stretchCapsOf } from '../../../../src/core';
 
 const FillerTile = () => (
   <div className="flex h-full w-full items-center justify-center rounded-md border border-dashed border-black/10 text-[10px] text-ink/25">

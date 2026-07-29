@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { fillDeadZones, type Placement, packedRowCount, spanFor, stretchCapsOf } from '../src/utils';
+import { fillDeadZones, type Placement, packedRowCount, spanFor, stretchCapsOf } from '../src/core';
 
 const s = (colSpan: number, rowSpan: number) => ({ colSpan, rowSpan });
 

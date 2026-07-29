@@ -23,7 +23,6 @@
 
 import { examples } from '../../demo/src/examples';
 import type { Example as Case, ExampleTile as CaseTile } from '../../demo/src/typing';
-import type { GridItemProps } from '../../src/react';
 import {
   fillDeadZones,
   groupEmptyRects,
@@ -32,7 +31,8 @@ import {
   type Span,
   spanFor,
   stretchCapsOf,
-} from '../../src/utils';
+} from '../../src/core';
+import type { GridItemProps } from '../../src/react';
 
 /** Static (`kind: 'data'`) examples only — same array shape the old `dev/src/cases` export had. */
 const cases: Case[] = examples
