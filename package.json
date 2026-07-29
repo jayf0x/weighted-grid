@@ -1,6 +1,6 @@
 {
   "name": "weighted-grid",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "type": "module",
   "description": "A React grid that sizes items by relative weight and fills empty space automatically, rendered as native CSS Grid.",
   "author": "jayF0x",

@@ -1,0 +1,217 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   weighted-grid — "SPEC SHEET"
+
+   A drafting plate: warm paper or deep ink, hairlines that bleed past the
+   content column to the viewport edge, diagonal hatch for negative space,
+   didone plate titles, mono for every measured value. Nothing decorative that
+   isn't also a ruler.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Theme is a class on <html>: `light` | `dark` | `system` (see index.html's
+   inline `_setTheme`). `system` defers to the OS. */
+@custom-variant dark {
+  &:where(.dark, .dark *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(.system, .system *) {
+      @slot;
+    }
+  }
+}
+
+:root {
+  color-scheme: light dark;
+
+  /* paper */
+  --paper: oklch(0.973 0.008 85);
+  --paper-raised: oklch(0.995 0.004 85);
+  --paper-sunk: oklch(0.945 0.011 82);
+
+  /* ink */
+  --ink: oklch(0.235 0.014 60);
+  --ink-2: oklch(0.46 0.012 62);
+  --ink-3: oklch(0.63 0.01 65);
+
+  /* rules & hatch — always derived from ink so they track the theme */
+  --rule: color-mix(in oklab, var(--ink) 14%, transparent);
+  --rule-strong: color-mix(in oklab, var(--ink) 26%, transparent);
+  --hatch: color-mix(in oklab, var(--ink) 9%, transparent);
+  --tint: color-mix(in oklab, var(--ink) 5%, transparent);
+
+  /* one accent, used sparingly: signal vermilion */
+  --accent: oklch(0.585 0.185 38);
+  --accent-soft: color-mix(in oklab, var(--accent) 14%, transparent);
+
+  --stage: 62vh;
+}
+
+.light {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+  --paper: oklch(0.165 0.008 70);
+  --paper-raised: oklch(0.205 0.009 70);
+  --paper-sunk: oklch(0.135 0.008 70);
+  --ink: oklch(0.935 0.008 85);
+  --ink-2: oklch(0.72 0.008 80);
+  --ink-3: oklch(0.55 0.008 80);
+  --rule: color-mix(in oklab, var(--ink) 15%, transparent);
+  --rule-strong: color-mix(in oklab, var(--ink) 28%, transparent);
+  --hatch: color-mix(in oklab, var(--ink) 11%, transparent);
+  --tint: color-mix(in oklab, var(--ink) 7%, transparent);
+  --accent: oklch(0.715 0.165 45);
+}
+
+@media (prefers-color-scheme: dark) {
+  .system {
+    --paper: oklch(0.165 0.008 70);
+    --paper-raised: oklch(0.205 0.009 70);
+    --paper-sunk: oklch(0.135 0.008 70);
+    --ink: oklch(0.935 0.008 85);
+    --ink-2: oklch(0.72 0.008 80);
+    --ink-3: oklch(0.55 0.008 80);
+    --rule: color-mix(in oklab, var(--ink) 15%, transparent);
+    --rule-strong: color-mix(in oklab, var(--ink) 28%, transparent);
+    --hatch: color-mix(in oklab, var(--ink) 11%, transparent);
+    --tint: color-mix(in oklab, var(--ink) 7%, transparent);
+    --accent: oklch(0.715 0.165 45);
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-raised: var(--paper-raised);
+  --color-sunk: var(--paper-sunk);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-tint: var(--tint);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bodoni Moda", "Didot", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --ease-plate: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Hairlines that bleed past the content column ─────────────────────────────
+   Lifted from the Tailwind site's `line-t`/`line-b`: a 200vw pseudo-element so
+   the rule keeps running to the viewport edge no matter how the column is
+   centred. The alternative — a full-bleed wrapper per section — needs a DOM
+   node per rule and can't sit *inside* a grid cell. */
+@utility line-t {
+  @apply relative before:pointer-events-none before:absolute before:top-0 before:left-[-100vw] before:h-px before:w-[200vw] before:bg-(--rule) before:content-[''];
+}
+
+@utility line-b {
+  @apply relative after:pointer-events-none after:absolute after:bottom-0 after:left-[-100vw] after:h-px after:w-[200vw] after:bg-(--rule) after:content-[''];
+}
+
+@utility line-y {
+  @apply line-t line-b;
+}
+
+/* ── Diagonal hatch: negative space that reads as "deliberately nothing" ────── */
+@utility hatch {
+  background-image: repeating-linear-gradient(
+    315deg,
+    var(--hatch) 0,
+    var(--hatch) 1px,
+    transparent 0,
+    transparent 50%
+  );
+  background-size: 8px 8px;
+  background-position: top left;
+}
+
+/* ── Mono spec label: the tiny uppercase caption on every measured thing ────── */
+@utility spec {
+  @apply font-mono text-[10px] leading-none tracking-[0.16em] text-ink-3 uppercase;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* the sticky plate header parks right under the top rule */
+    scroll-padding-top: 5.5rem;
+  }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--paper);
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Native range input, restyled as a measuring slot rather than a pill. */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    width: 100%;
+    height: 1rem;
+    cursor: ew-resize;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 1px;
+    background: var(--rule-strong);
+  }
+  input[type="range"]::-moz-range-track {
+    height: 1px;
+    background: var(--rule-strong);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 3px;
+    height: 14px;
+    margin-top: -6.5px;
+    border-radius: 0;
+    background: var(--accent);
+    transition: transform 120ms var(--ease-plate);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 3px;
+    height: 14px;
+    border: 0;
+    border-radius: 0;
+    background: var(--accent);
+  }
+  input[type="range"]:hover::-webkit-slider-thumb,
+  input[type="range"]:active::-webkit-slider-thumb {
+    transform: scaleY(1.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

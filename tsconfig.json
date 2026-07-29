@@ -15,9 +15,11 @@
       "weighted-grid/react": ["./src/react.tsx"],
       "weighted-grid/presets": ["./src/presets/index.ts"],
       "weighted-grid/core": ["./src/core.ts"],
-      "weighted-grid": ["./src/index.ts"],
-      "@/*": ["./demo/src/*"]
+      "weighted-grid": ["./src/index.ts"]
     }
   },
-  "include": ["src", "tests", "scripts", "demo/src"]
+  // The demo has its own tsconfig (Vite client types, its own React install) — running it through
+  // this program too gave duplicate-`@types/react` errors for no gain. `demo/src/showcases/report.ts`
+  // still gets checked here: `scripts/dev/dev-report-grid.ts` imports it, and TS follows imports.
+  "include": ["src", "tests", "scripts"]
 }

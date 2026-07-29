@@ -149,19 +149,19 @@ bun run typecheck   # tsc --noEmit
 bun run build       # vite lib build → dist/ (index + react + core + presets entries)
 bun run format      # biome check --write
 cd demo && bun run typecheck && bunx vite build   # verify the demo typechecks and compiles
-bun scripts/dev/dev-report-grid.ts            # QA: every demo/src/examples static entry — holes, missed-stretch, fillComponent tiles
-bun scripts/dev/dev-report-grid.ts --case=1   # QA: just examples[1] ("the 2nd example") — the "read this before judging a screenshot" report
+bun scripts/dev/dev-report-grid.ts            # QA: every data plate — holes, missed-stretch, fillComponent tiles
+bun scripts/dev/dev-report-grid.ts --case=1   # QA: just reportCases[1] — the "read this before judging a screenshot" report
 scripts/dev/link-local.sh        # build + copy dist/ into ../jayf0x.github.io/node_modules (local test)
 ```
 
 `scripts/dev/dev-report-grid.ts` analyzes empty space in the span grid from the placement model
 (`placeSpans`) — no browser needed since the grid owns explicit placement, so this model equals
-what the DOM renders. It imports `demo/src/examples` directly (`Example[]` entries, filtered to the
-`kind: 'data'` ones — plain data, no JSX), so the report can never drift from what the demo app
-renders — there's exactly one definition of each static example's setup. `analyzeCase`/
-`formatCaseReport` report on one `Example` (holes, which ones `stretch` could've closed instead of
+what the DOM renders. It imports `demo/src/showcases/report.ts` directly (`ReportCase[]` —
+plain data, no JSX), so the report can never drift from what the demo renders — there's exactly one
+definition of each reference layout. `analyzeCase`/
+`formatCaseReport` report on one `ReportCase` (holes, which ones `stretch` could've closed instead of
 ending up in a `fillComponent` tile, and the actual merged `fillComponent` tiles the grid would
-render); pass `--case=N` to scope to one example, `--cols=`/`--stretch=` to override that example's
+render); pass `--case=N` to scope to one case, `--cols=`/`--stretch=` to override its
 `Grid` props. `analyzeSpans`/`analyzeItems`/`showcaseItems` (behind `--showcase`) are the older
 Showcase-specific report. `analyzeDevGrid`/`formatDevReport` are a back-compat shim over
 `analyzeCase` for the pre-existing `devItems()`-shaped unit tests. Also importable for
@@ -169,8 +169,11 @@ Showcase-specific report. `analyzeDevGrid`/`formatDevReport` are a back-compat s
 
 ## Conventions
 
-- `react` is a real `dependencies` entry, not a peer dep — the engine (`src/utils.ts`, `src/react.tsx`)
-  imports it directly and there's no non-React entry point today. See `backlog.md`.
+- `react` is a **peer dependency** (`">=18"`), never a `dependencies` entry — the package ships zero
+  runtime deps. Only `src/react.tsx` / `src/utils.ts` import it; `src/core.ts` is JSX-free and ships as
+  `weighted-grid/core` with no `react` import at all, which `tests/dist-imports.test.ts` asserts
+  against the actual built `dist/core.js`. Adding a `dependencies` entry — react or anything else —
+  is a deliberate decision, not a drive-by. See `backlog.md`'s first entry for the migration.
 - Sizing is by relative **`weight`** only. No fixed-pixel _item_ sizes — a resizable grid doesn't need
   them (`rowHeight` is the one per-row escape hatch).
 - Rendering is **native CSS Grid**; the JS only computes placement. Don't reimplement layout the
@@ -189,58 +192,56 @@ old modes aren't being restored from git.
 
 # demo/
 
-The released React+TypeScript (Vite) app (`.github/workflows/demo-pages.yml` deploys it to GitHub
-Pages; `scripts/deploy-pages.sh`; README's "Live demo" badge). Imports the library from source via
-the `weighted-grid`/`weighted-grid/react`/`weighted-grid/presets` aliases in `demo/vite.config.ts`,
-so it tracks local changes. Not part of the published package. `bun run dev` / `bun run build` /
-`bun run typecheck`
-from inside `demo/`. `@/*` is aliased to `demo/src/*` (see `vite.config.ts` + `tsconfig.json`).
+The released React + TypeScript (Vite, Tailwind v4) showcase site (`.github/workflows/demo-pages.yml`
+deploys it to GitHub Pages; `scripts/deploy-pages.sh`; README's "Live demo" badge). Imports the
+library from source via the `weighted-grid`/`weighted-grid/react`/`weighted-grid/presets` aliases in
+`demo/vite.config.ts`, so it tracks local changes. Not part of the published package. `bun run dev` /
+`bun run build` / `bun run typecheck` from inside `demo/`. `@/*` is aliased to `demo/src/*`.
 
-See `demo/REDESIGN_PLAN.md` for the redesign rationale (blueprint sitewide theme, example lineup,
-sticky control-rail architecture) — this section documents the result, that doc explains why.
+See `demo/DESIGN.md` for the design system (the "spec sheet" direction, tokens, type scale) and for
+why the layer split below exists — this section documents *what* is there, that doc explains *why*.
 
-- `demo/src/examples/*` — one folder per example, added by pushing an entry onto
-  `demo/src/examples/index.ts`'s ordered `ExampleEntry[]` list — the single array both the app shell
-  (`App.tsx`) and `scripts/dev/dev-report-grid.ts` import, so there's no way for the visual and the QA
-  report to disagree about an example's setup. Render order opens on the two organic examples (the
-  most different-looking thing on the page), not the exhaustive reference examples. Two shapes,
-  both count as "an example":
-  - **Static data** (`prop-matrix/`, `pinned-spans/`): an `Example` (`{ title, meta, tiles }`, types
-    in `demo/src/typing.ts`) where `meta` is the `<Grid>` props in effect and `tiles` is a list of
-    `{ kind?: "item" | "void", ...GridItemProps }` (`kind` defaults to `"item"`; `"void"` renders as
-    intentional negative space via `<Void>` instead of `<Item>`). No component code — rendered by
-    the shared `ExampleSection`, which registers a read-only rail panel for it (see below) — these
-    are references, not toys, so no sliders.
-  - **Interactive component** (`row-height/`, `organic-raw/`, `organic-styled/`, `responsive-cols/`,
-    `modes/` — every one of these owns its own state and registers a control panel into the rail via
-    `useSectionControls`): `organic-raw`/`organic-styled` are `organicPreset` split two ways — raw is
-    flat-color tiles cropped into a strip that scrolls *horizontally* (the one example that isn't a
-    vertical list), styled is the same preset with real photo content
-    (`demo/public/organic/`), gradient captions, and a `fillComponent` filler. `responsive-cols`
-    demonstrates `nrCols` collapsing on narrow viewports (a rail toggle simulates the breakpoint
-    without resizing the browser). `row-height` is auto-vs-fixed `rowHeight`, controls now live in
-    the rail instead of stacked above the panels. `modes` is the small preset-gallery (masonPreset/
-    organicPreset side by side).
-  `scripts/dev/dev-report-grid.ts` only analyzes the `kind: 'data'` entries (filtered before
-  indexing, so reordering `kind: 'component'` entries around them never shifts `--case=N`).
-- `demo/src/utils/controlsRail.tsx` — `ControlsRailProvider` (state: which example is active + its
-  registered control-panel node) + `useSectionControls(id, node)` (called by every example: registers
-  its panel, and an `IntersectionObserver` on the example's root marks it active once it crosses an
-  activation band near the top of the viewport) + `useActiveRailContent()` (read by `ControlRail`
-  alone). One rail, swapped per example — the rail itself has zero per-example knowledge.
-- `demo/src/components/` — shared per-tile visuals (`Item`/`Void`/`Filler`/`Title`), the info toggle
-  (`Header`), `ComponentHeader`/`PlateBadge` (the "PLATE 0N/0M" numbering every example carries),
-  `CornerTicks`/`Blueprint` (the sitewide drafting-table framing — corner crop-marks per example box,
-  full-height ticked sidelines bounding the content column), `ControlRail` (renders whatever's
-  currently active), and `ExampleSection` (turns one static `Example` into a `<Grid>`). `Item`/`Void`
-  take an `infoMode: "simple" | "dev"` prop, lifted in `App.tsx` from a single global toggle — "how
-  much QA detail am I looking at right now" is one axis for the whole page, not a per-example
-  setting. Every static example renders through the same components; an example should never need
-  its own bespoke tile markup — extend these instead.
-- `demo/src/App.tsx` maps `examples` to sections beside the sticky `ControlRail`, one per entry, in
-  order, each carrying its `PlateInfo` (`{ index, total }`, computed from `examples.length`).
+## The two layers
 
-To ask an agent "look at the 2nd example": `bun scripts/dev/dev-report-grid.ts --case=1` gives the exact
-`Grid` props, tile count, and an ASCII occupancy map (holes vs. stretch-closable vs. stuck) without
-a browser; `demo/src/examples/<name>/index.ts(x)` gives the exact props/data that produced it.
-Screenshot the running app (`bun run dev` inside `demo/`) for the visual.
+The whole point of the structure is one boundary: **what this repo wants to showcase** vs. **the
+frontend required to showcase anything**. The second half is written so it can be lifted into
+another project unchanged.
+
+- `demo/src/showcase/` — **the template layer.** Knows nothing about grids.
+  - `types.ts` — `Plate` (`{ id, title, lede, props?, Component }`), `PlateIndex`. A plate is one
+    idea with a live thing and two or three knobs — *not* a story with an args table.
+  - `Plate.tsx` — `PlateFrame` (stage left, caption/controls/source right, sticky on wide screens)
+    + `PlateProvider`. A plate component owns its state and renders `<PlateFrame>`; its *identity*
+    (title, number, source) arrives through context from the page, so the page never reaches into a
+    plate to render its controls elsewhere.
+  - `controls.tsx` — schema in, typed values + a rendered panel out. Three kinds only (`range`,
+    `toggle`, `segment`); a plate needing a fourth is a plate trying to be documentation. Not Leva:
+    Leva ships its own DOM and theme, which this design would have to fight, and this is ~180 lines
+    against the page's own tokens.
+  - `Source.tsx` — the plate's own source as a numbered listing, with copy. Deliberately not
+    syntax-highlighted (see the file's own comment).
+  - `Rail.tsx` — margin ruler + `useActivePlate` scroll spy. `Backdrop.tsx` — dot lattice, vignette,
+    and the pointer-tracking CAD crosshair. `theme.tsx` — three-way light/auto/dark, painted before
+    first paint by the inline `_setTheme` in `index.html`. `primitives.tsx` — `Hatch`, `CropMarks`,
+    `Spec`, `PropChip`, `PlateBadge`. `hooks.ts` — `useWidth`, `useSquareRows`.
+- `demo/src/showcases/` — **the repo-specific layer.** One folder per plate.
+  - Add a plate: write `demo/src/showcases/<id>/plate.tsx` exporting `plate: Plate`, then add its id
+    to `ORDER` in `demo/src/showcases/index.ts`. Both the module and its raw source are globbed
+    (`import.meta.glob`), so "here is the source" costs nothing per plate.
+  - `Hero.tsx` — the library laying out its own hero, re-weighting one tile every few seconds
+    (paused for reduced-motion and hidden tabs). `tiles.tsx` — `Tile`/`Void`/`Filler`, monochrome so
+    layouts read as *shape*. `seed.ts` — deterministic opening weights, so first impressions and
+    screenshots are stable. `DataGrid.tsx` — the one renderer for plain-data plates.
+  - `report.ts` — the two *reference* plates (`propMatrix`, `pinnedSpans`) as plain data, exported
+    as `reportCases`. `scripts/dev/dev-report-grid.ts` imports this exact array, so its QA report and
+    the rendered page can never disagree; `--case=N` indexes it.
+
+`useSquareRows` deserves a note: `rowHeight="auto"` divides *container height* into bands, which is
+right for a grid fitting a box but wrong for a specimen — with few rows it stretches every tile into
+a sliver and `weight={2}` stops looking like twice as much. Most plates therefore measure the stage
+and pass a px `rowHeight` equal to the column width, which makes cells square.
+
+To ask an agent "look at plate 02": `bun scripts/dev/dev-report-grid.ts --case=0` gives the exact
+`Grid` props, tile count, and an ASCII occupancy map (holes vs. stretch-closable vs. stuck) without a
+browser; `demo/src/showcases/<id>/plate.tsx` gives the exact props that produced it. Screenshot the
+running app (`bun run dev` inside `demo/`) for the visual.

@@ -1,5 +1,5 @@
 /**
- * Grid QA harness — dead-zone analyzer + per-example report for `demo/src/examples`.
+ * Grid QA harness — dead-zone analyzer + per-plate report for `demo/src/showcases`.
  *
  * Runs against the placement *model* (`placeSpans`) rather than a real browser — no puppeteer, no
  * deps, deterministic, and importable straight into a test. The grid owns placement with explicit
@@ -7,11 +7,10 @@
  * pixel-for-pixel; there's nothing a `div[role=grid]` + `getBoundingClientRect()` walk in devtools
  * would tell you that this script doesn't already know, and this one runs without a browser.
  *
- * Every static example (`demo/src/examples/*`) is plain data — an `Example` of
- * `{ title, meta, tiles }`, no JSX — so this script imports the exact same array the demo app
- * renders and keeps only the `kind: 'data'` entries (the one interactive/component-only example,
- * `row-height`, has no static tile list to analyze). There is one source of truth per example;
- * nothing here can drift from what's on screen.
+ * Two plates are *reference* layouts declared as plain data (`demo/src/showcases/report.ts`) — a
+ * `ReportCase` of `{ title, meta, tiles }`, no JSX — so this script imports the exact same array
+ * the demo renders. The other plates are interactive and have no static tile list to analyze.
+ * There is one source of truth per data plate; nothing here can drift from what's on screen.
  *
  * Run:   bun scripts/dev/dev-report-grid.ts               # every static example
  *        bun scripts/dev/dev-report-grid.ts --case=1       # just cases[1] ("the 2nd example")
@@ -21,8 +20,7 @@
  * unit tests (see tests/dev-report-grid.test.ts).
  */
 
-import { examples } from '../../demo/src/examples';
-import type { Example as Case, ExampleTile as CaseTile } from '../../demo/src/typing';
+import { type ReportCase as Case, type ReportTile as CaseTile, reportCases } from '../../demo/src/showcases/report';
 import {
   fillDeadZones,
   groupEmptyRects,
@@ -34,10 +32,8 @@ import {
 } from '../../src/core';
 import type { GridItemProps } from '../../src/react';
 
-/** Static (`kind: 'data'`) examples only — same array shape the old `dev/src/cases` export had. */
-const cases: Case[] = examples
-  .filter((e): e is Extract<typeof e, { kind: 'data' }> => e.kind === 'data')
-  .map((e) => e.example);
+/** The plain-data plates, in plate order. */
+const cases: Case[] = reportCases;
 
 export type DeadZoneReport = {
   cols: number;
@@ -168,10 +164,9 @@ export const showcaseItems = (count = 12): GridItemProps[] => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// demo/src/examples — the actual demo QA examples. `devItems()` stays as the flat GridItemProps
-// view of `demo/src/examples/prop-matrix` (`cases[0]`) for the pre-existing unit-test baselines
-// below; every static example (including ones with `void` tiles, like the organic mosaic) goes
-// through `analyzeCase`.
+// demo/src/showcases/report.ts — the plain-data plates the demo renders. `devItems()` stays as the
+// flat GridItemProps view of `propMatrix` (`cases[0]`) for the pre-existing unit-test baselines
+// below; every data plate (including ones with `void` tiles) goes through `analyzeCase`.
 // ─────────────────────────────────────────────────────────────────────────────
 export const devItems = (): GridItemProps[] =>
   cases[0].tiles.filter((t) => t.kind === 'item').map(({ kind, ...props }) => props);
