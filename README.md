@@ -186,13 +186,15 @@ style:
 Every one of these runs in the [live demo](https://jayf0x.github.io/weighted-grid/) — the source is
 a few lines long and worth a skim.
 
-| Example                                                        | Shows off                                                             |
-| -------------------------------------------------------------- | --------------------------------------------------------------------- |
-| [prop-matrix](./demo/src/examples/prop-matrix/index.ts)        | Every sizing prop side by side — the cheat sheet                      |
-| [pinned-spans](./demo/src/examples/pinned-spans/index.ts)      | Strict `cols`/`rows` items with elastic ones flowing around them      |
-| [row-height](./demo/src/examples/row-height/index.tsx)         | `"auto"` bands vs. fixed rows, with live controls                     |
-| [modes](./demo/src/examples/modes/index.tsx)                   | `masonPreset` and `organicPreset` on the same content                 |
-| [organic-mosaic](./demo/src/examples/organic-mosaic/index.tsx) | 30 real cards, 48 columns, `stretch` + `fillComponent` doing the work |
+| Example                                                              | Shows off                                                                |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [organic-raw](./demo/src/examples/organic-raw/index.tsx)             | `organicPreset`, flat color, cropped into a strip that scrolls sideways |
+| [organic-styled](./demo/src/examples/organic-styled/index.tsx)       | Same preset, real cards, `stretch` + `fillComponent` doing the work     |
+| [responsive-cols](./demo/src/examples/responsive-cols/index.tsx)    | `nrCols` collapsing on narrow viewports                                 |
+| [prop-matrix](./demo/src/examples/prop-matrix/index.ts)              | Every sizing prop side by side — the cheat sheet                        |
+| [pinned-spans](./demo/src/examples/pinned-spans/index.ts)            | Strict `cols`/`rows` items with elastic ones flowing around them        |
+| [row-height](./demo/src/examples/row-height/index.tsx)               | `"auto"` bands vs. fixed rows, with live controls                       |
+| [modes](./demo/src/examples/modes/index.tsx)                         | `masonPreset` and `organicPreset` on the same content                   |
 
 ## Development
 

@@ -79,6 +79,14 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  /* Sitewide blueprint grid — same repeating-gradient formula `showGrid`/`Void` use internally, at
+     a much fainter opacity (a color-mix tint, not a body-level opacity, so page content stays full
+     strength), so the whole page reads as one drafting sheet instead of a bolted-on texture. */
+  --grid-line: color-mix(in oklab, var(--color-ink) 5%, transparent);
+  background-image:
+    repeating-linear-gradient(to right, var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent 64px),
+    repeating-linear-gradient(to bottom, var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent 64px);
+  background-attachment: fixed;
 }
 
 @keyframes pop-in {
@@ -94,6 +102,22 @@ body {
 
 .rect-enter {
   animation: pop-in 220ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Rail content cross-fade on `<ControlRail>` when the active example changes (keyed by activeId). */
+.panel-in {
+  animation: panel-in 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 ::selection {

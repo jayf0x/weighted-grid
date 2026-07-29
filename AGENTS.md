@@ -196,28 +196,49 @@ so it tracks local changes. Not part of the published package. `bun run dev` / `
 `bun run typecheck`
 from inside `demo/`. `@/*` is aliased to `demo/src/*` (see `vite.config.ts` + `tsconfig.json`).
 
+See `demo/REDESIGN_PLAN.md` for the redesign rationale (blueprint sitewide theme, example lineup,
+sticky control-rail architecture) — this section documents the result, that doc explains why.
+
 - `demo/src/examples/*` — one folder per example, added by pushing an entry onto
   `demo/src/examples/index.ts`'s ordered `ExampleEntry[]` list — the single array both the app shell
   (`App.tsx`) and `scripts/dev/dev-report-grid.ts` import, so there's no way for the visual and the QA
-  report to disagree about an example's setup. Two shapes, both count as "an example":
+  report to disagree about an example's setup. Render order opens on the two organic examples (the
+  most different-looking thing on the page), not the exhaustive reference examples. Two shapes,
+  both count as "an example":
   - **Static data** (`prop-matrix/`, `pinned-spans/`): an `Example` (`{ title, meta, tiles }`, types
     in `demo/src/typing.ts`) where `meta` is the `<Grid>` props in effect and `tiles` is a list of
     `{ kind?: "item" | "void", ...GridItemProps }` (`kind` defaults to `"item"`; `"void"` renders as
     intentional negative space via `<Void>` instead of `<Item>`). No component code — rendered by
-    the shared `ExampleSection`.
-  - **Interactive component** (`row-height/`, the *one* example allowed to be stateful — see the
-    merge plan's "interactivity gap"; don't generalize a `controls` descriptor onto `Example` for
-    it) and `organic-mosaic/` (real-looking card tiles from `demo/public/organic/`, laid out via the
-    library's `organicPreset`, no controls, no void tiles) — both export a component instead of
-    data.
-  `scripts/dev/dev-report-grid.ts` only analyzes the `kind: 'data'` entries.
+    the shared `ExampleSection`, which registers a read-only rail panel for it (see below) — these
+    are references, not toys, so no sliders.
+  - **Interactive component** (`row-height/`, `organic-raw/`, `organic-styled/`, `responsive-cols/`,
+    `modes/` — every one of these owns its own state and registers a control panel into the rail via
+    `useSectionControls`): `organic-raw`/`organic-styled` are `organicPreset` split two ways — raw is
+    flat-color tiles cropped into a strip that scrolls *horizontally* (the one example that isn't a
+    vertical list), styled is the same preset with real photo content
+    (`demo/public/organic/`), gradient captions, and a `fillComponent` filler. `responsive-cols`
+    demonstrates `nrCols` collapsing on narrow viewports (a rail toggle simulates the breakpoint
+    without resizing the browser). `row-height` is auto-vs-fixed `rowHeight`, controls now live in
+    the rail instead of stacked above the panels. `modes` is the small preset-gallery (masonPreset/
+    organicPreset side by side).
+  `scripts/dev/dev-report-grid.ts` only analyzes the `kind: 'data'` entries (filtered before
+  indexing, so reordering `kind: 'component'` entries around them never shifts `--case=N`).
+- `demo/src/utils/controlsRail.tsx` — `ControlsRailProvider` (state: which example is active + its
+  registered control-panel node) + `useSectionControls(id, node)` (called by every example: registers
+  its panel, and an `IntersectionObserver` on the example's root marks it active once it crosses an
+  activation band near the top of the viewport) + `useActiveRailContent()` (read by `ControlRail`
+  alone). One rail, swapped per example — the rail itself has zero per-example knowledge.
 - `demo/src/components/` — shared per-tile visuals (`Item`/`Void`/`Filler`/`Title`), the info toggle
-  (`Header`), and `ExampleSection` (turns one static `Example` into a `<Grid>`). `Item`/`Void` take
-  an `infoMode: "simple" | "dev"` prop, lifted in `App.tsx` from a single global toggle — "how much
-  QA detail am I looking at right now" is one axis for the whole page, not a per-example setting.
-  Every static example renders through the same components; an example should never need its own
-  bespoke tile markup — extend these instead.
-- `demo/src/App.tsx` maps `examples` to sections, one per entry, in order.
+  (`Header`), `ComponentHeader`/`PlateBadge` (the "PLATE 0N/0M" numbering every example carries),
+  `CornerTicks`/`Blueprint` (the sitewide drafting-table framing — corner crop-marks per example box,
+  full-height ticked sidelines bounding the content column), `ControlRail` (renders whatever's
+  currently active), and `ExampleSection` (turns one static `Example` into a `<Grid>`). `Item`/`Void`
+  take an `infoMode: "simple" | "dev"` prop, lifted in `App.tsx` from a single global toggle — "how
+  much QA detail am I looking at right now" is one axis for the whole page, not a per-example
+  setting. Every static example renders through the same components; an example should never need
+  its own bespoke tile markup — extend these instead.
+- `demo/src/App.tsx` maps `examples` to sections beside the sticky `ControlRail`, one per entry, in
+  order, each carrying its `PlateInfo` (`{ index, total }`, computed from `examples.length`).
 
 To ask an agent "look at the 2nd example": `bun scripts/dev/dev-report-grid.ts --case=1` gives the exact
 `Grid` props, tile count, and an ASCII occupancy map (holes vs. stretch-closable vs. stuck) without

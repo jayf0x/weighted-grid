@@ -8,7 +8,7 @@ export function Header({
   setInfoMode: (mode: InfoMode) => void;
 }) {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4 px-8 py-7">
+    <header className="relative z-10 mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-8 py-7">
       <div className="flex items-baseline gap-3">
         <h1 className="font-display text-[26px] font-medium tracking-tight text-ink">weighted-grid</h1>
         <span className="text-[13px] text-ink/35">weighted grid for React</span>

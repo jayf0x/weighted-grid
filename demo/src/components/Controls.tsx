@@ -69,7 +69,7 @@ export function Controls({
   setFillGaps: (v: boolean) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-lg border border-line bg-white px-5 py-4">
+    <div className="flex flex-col gap-3">
       <Slider label="Items" value={count} min={COUNT_MIN} max={COUNT_MAX} onInput={setCount} />
       <Slider label="Columns" value={nrCols} min={NR_COLS_MIN} max={NR_COLS_MAX} onInput={setNrCols} />
       <Slider label="Weight A" value={weights.A} min={WEIGHT_MIN} max={WEIGHT_MAX} onInput={(v) => setWeight('A', v)} />
@@ -83,8 +83,10 @@ export function Controls({
         max={STRETCH_MAX}
         onInput={(v) => setStretch(v === STRETCH_MAX ? Number.POSITIVE_INFINITY : v)}
       />
-      <Toggle label="Show grid" checked={showGrid} onChange={setShowGrid} />
-      <Toggle label="Fill gaps" checked={fillGaps} onChange={setFillGaps} />
+      <div className="flex flex-col gap-1.5 pt-1">
+        <Toggle label="Show grid" checked={showGrid} onChange={setShowGrid} />
+        <Toggle label="Fill gaps" checked={fillGaps} onChange={setFillGaps} />
+      </div>
       <p className="text-[13px] text-ink/40">
         Same blocks in both panels — only the <code className="font-mono text-ink/70">rowHeight</code> prop differs.
       </p>
