@@ -353,23 +353,21 @@ describe('flipTransform (FLIP policy)', () => {
     expect(flipTransform(box(0, 0), box(0, 0), true, true)).toBeNull();
   });
 
-  test('playback is damped, not a full replay of the delta', () => {
-    // moved 20px right / 10px down. A textbook FLIP would start the item the whole 20/10 back;
-    // half of it keeps the direction legible at half the amplitude.
-    expect(flipTransform(box(0, 0), box(20, 10), false, true)).toBe('translate(-10px, -5px) scale(1, 1)');
-    // scale damps towards 1 (its identity), not towards 0: halving 0.5 gives 0.75, not 0.25
+  test('the transform replays the full delta — no damping', () => {
+    // moved 20px right / 10px down
+    expect(flipTransform(box(0, 0), box(20, 10), false, true)).toBe('translate(-20px, -10px) scale(1, 1)');
     expect(flipTransform(box(0, 0, 50, 50), box(0, 0, 100, 100), true, false)).toBe(
-      'translate(0px, 0px) scale(0.75, 0.75)',
+      'translate(0px, 0px) scale(0.5, 0.5)',
     );
   });
 
   test('each flag only drives its own axis of the transform', () => {
     // size-only ignores the move; position-only ignores the resize
     expect(flipTransform(box(0, 0, 50, 50), box(20, 0, 100, 100), true, false)).toBe(
-      'translate(0px, 0px) scale(0.75, 0.75)',
+      'translate(0px, 0px) scale(0.5, 0.5)',
     );
     expect(flipTransform(box(0, 0, 50, 50), box(20, 0, 100, 100), false, true)).toBe(
-      'translate(-10px, 0px) scale(1, 1)',
+      'translate(-20px, 0px) scale(1, 1)',
     );
   });
 
@@ -380,12 +378,6 @@ describe('flipTransform (FLIP policy)', () => {
     expect(flipTransform(box(0, 0, 100, 100), box(0, 0, 10, 10), true, false)).toBeNull();
     // …but a jump just inside the threshold still animates
     expect(flipTransform(box(0, 0), box(140, 0), false, true)).not.toBeNull();
-  });
-
-  test('the snap thresholds judge the real layout change, not the damped playback', () => {
-    // 4x growth is over FLIP_MAX_SCALE and snaps, even though damping would have rendered it as a
-    // 2.5x transform — otherwise the cap would silently loosen whenever the damping is retuned
-    expect(flipTransform(box(0, 0, 400, 400), box(0, 0, 100, 100), true, false)).toBeNull();
   });
 
   test('a zero-sized box is skipped rather than dividing by zero', () => {

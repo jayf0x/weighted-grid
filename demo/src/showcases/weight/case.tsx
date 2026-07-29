@@ -3,6 +3,7 @@ import { Grid, GridItem } from 'weighted-grid/react';
 import { CaseFrame } from '@/showcase/Case';
 import { range, useControls } from '@/showcase/controls';
 import { useSquareRows } from '@/showcase/hooks';
+import { FLIP_TRANSITION } from '@/showcase/motion';
 import type { Case } from '@/showcase/types';
 import { seededWeight } from '../seed';
 import { Tile } from '../tiles';
@@ -38,7 +39,7 @@ function Weight() {
       }
     >
       <div ref={stageRef}>
-        <Grid nrCols={values.nrCols} gap={values.gap} rowHeight={rowHeight} animateSize>
+        <Grid nrCols={values.nrCols} gap={values.gap} rowHeight={rowHeight} animateSize itemAnimation={FLIP_TRANSITION}>
           {Array.from({ length: values.count }, (_, i) => {
             const w = weightOf(i);
             return (

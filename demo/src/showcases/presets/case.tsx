@@ -3,6 +3,7 @@ import { masonPreset, organicPreset } from 'weighted-grid/presets';
 import { Grid, GridItem } from 'weighted-grid/react';
 import { CaseFrame } from '@/showcase/Case';
 import { range, segment, useControls } from '@/showcase/controls';
+import { FLIP_TRANSITION } from '@/showcase/motion';
 import { useSquareRows } from '@/showcase/hooks';
 import type { Case } from '@/showcase/types';
 import { Tile } from '../tiles';
@@ -39,7 +40,7 @@ function Presets() {
   return (
     <CaseFrame controls={panel}>
       <div ref={stageRef}>
-        <Grid nrCols={NR_COLS} gap={GAP} rowHeight={rowHeight} preset={preset} animateSize>
+        <Grid nrCols={NR_COLS} gap={GAP} rowHeight={rowHeight} preset={preset} animateSize itemAnimation={FLIP_TRANSITION}>
           {Array.from({ length: COUNT }, (_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: specimen tiles are positional — the index *is* the identity
             <GridItem key={i}>

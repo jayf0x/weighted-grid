@@ -106,10 +106,12 @@ whose *size* didn't change doesn't animate at all, so the only thing that moves 
 control actually changed. On the stretch case that's 3 tiles out of 12, which is the point of the
 case.
 
-**Playback is damped.** A textbook FLIP starts the item exactly where it used to be, so every item
-travels its full layout delta at once. The library now plays back half of it (`FLIP_STRENGTH`),
-which keeps the direction of the change legible — you can still see which tiles grew — at half the
-amplitude. Acknowledge the change; don't perform it.
+**The transition curve is ours to pick, not the library's.** `itemAnimation` is a CSS `transition`
+value the library splices in verbatim (`@/showcase/motion.ts`'s `FLIP_TRANSITION`, currently `200ms
+cubic-bezier(0.22, 1, 0.36, 1)` — an ease-out, so a tile decelerates into its new spot instead of
+snapping there) — the library itself no longer hardcodes a duration/easing. Every case shares one
+constant purely so five cases don't carry five copies of the same string; nothing stops a case from
+picking its own.
 
 Two further things were making the transitions misbehave, both fixed in the library rather than
 papered over here:

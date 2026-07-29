@@ -1,4 +1,5 @@
 import { Grid, GridItem, type GridProps } from 'weighted-grid/react';
+import { FLIP_TRANSITION } from '@/showcase/motion';
 import type { ReportCase } from './report';
 import { Tile, Void } from './tiles';
 
@@ -8,7 +9,7 @@ export function DataGrid({ data, ...overrides }: { data: ReportCase } & Omit<Gri
   // same rule as the other cases: no caption in a cell too small to hold one
   const hasLabels = typeof overrides.rowHeight !== 'number' || overrides.rowHeight >= 44;
   return (
-    <Grid animateSize {...data.meta} {...overrides}>
+    <Grid animateSize itemAnimation={FLIP_TRANSITION} {...data.meta} {...overrides}>
       {data.tiles.map((tile, i) => {
         const { kind = 'item', ...item } = tile;
         const spec = [

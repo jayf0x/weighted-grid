@@ -90,6 +90,11 @@ export type GridProps = PropsWithChildren<{
    * Off by default — most layout changes reorder enough that animating position reads as noisy; turn
    * it on only for grids where items mostly nudge rather than jump. Default: `false`. */
   animatePosition?: boolean;
+  /** The CSS `transition` value applied to the FLIP transform, e.g. `"200ms ease-out"` or
+   * `"400ms cubic-bezier(...)"` — spliced verbatim into `transition: transform ${itemAnimation}`.
+   * No effect unless `animateSize`/`animatePosition` is also on. Omit it and the transform still
+   * applies but with no transition, i.e. no visible animation. */
+  itemAnimation?: string;
   className?: string;
   style?: CSSProperties;
 }>;
@@ -121,41 +126,27 @@ const gridLinesStyle = (nrCols: number, rowCount: number, gapCss: string): CSSPr
   return layers.length ? { backgroundImage: layers.join(',') } : {};
 };
 
-const FLIP_MS = 180;
-// `ease-out`, not `ease`: a FLIP starts at the old box and settles into the new one, so the motion
-// should decelerate on arrival. A symmetric curve makes it accelerate away from where the item
-// already was, which is the part that reads as a lurch.
-const FLIP_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
-
 /** Past this much movement, snapping beats animating.
  *
  * FLIP replays a layout change as the transform that would undo it, so a *big* change means a big
  * transform: change `nrCols` from 9 to 3 and every tile starts hundreds of pixels from where it
  * belongs, flying in from outside the grid. That isn't a transition anyone asked to watch — at that
  * scale it's a different layout, and it should just appear. Expressed as a multiple of the item's
- * own size so it scales with the grid instead of being a magic pixel count. */
+ * own size so it scales with the grid instead of being a magic pixel count. Not exposed as a prop:
+ * this is a "was this really a nudge or a different layout" judgment call, not a style choice —
+ * timing and easing are the caller's, via `itemAnimation`. */
 const FLIP_MAX_TRAVEL = 1.5;
 
-/** Same idea for `animateSize`: a tile that has to grow more than this snaps instead. */
+/** Same idea for `animateSize`: a tile that has to grow/shrink more than this snaps instead. */
 const FLIP_MAX_SCALE = 2.5;
-
-/** How much of the delta actually gets played back, 0–1.
- *
- * A textbook FLIP starts the item exactly where it used to be, which on a grid means every item
- * travelling its full layout change at once — technically correct, and far more motion than anyone
- * wants to watch on a re-layout. Starting part-way there keeps the *direction* legible (you can see
- * which tiles grew and which shrank) at a fraction of the amplitude, which is the whole point of the
- * effect: acknowledge the change, don't perform it. Opinionated on purpose — this is the value the
- * demo landed on after tuning it against real layouts, not a knob. */
-const FLIP_STRENGTH = 0.5;
 
 /** An item's box relative to the grid container. */
 export type FlipBox = { left: number; top: number; width: number; height: number };
 
 /**
  * The whole FLIP *policy*, as a pure function: given where an item was and where it now is, what
- * transform (if any) should play it back? Split out from the effect so the decision — including
- * both snap thresholds — is unit-testable without a DOM. `null` means "don't animate, just snap".
+ * transform (if any) should play it back? Split out from the effect so the snap-threshold decision
+ * is unit-testable without a DOM. `null` means "don't animate, just snap".
  *
  * Not part of the public API; exported for `tests/react-render.test.tsx`.
  */
@@ -173,20 +164,11 @@ export const flipTransform = (
   const sy = animateSize ? prev.height / next.height : 1;
   if (!dx && !dy && sx === 1 && sy === 1) return null;
 
-  // The caps are judged on the *real* layout change, not the damped playback: whether a change is
-  // too big to read as motion is a fact about the layout, and shouldn't move when the damping does.
   const travel = Math.max(Math.abs(dx) / next.width, Math.abs(dy) / next.height);
   const scale = Math.max(sx, sy, 1 / sx, 1 / sy);
   if (travel > FLIP_MAX_TRAVEL || scale > FLIP_MAX_SCALE) return null;
 
-  const round = (n: number) => Math.round(n * 1000) / 1000;
-  const tx = round(dx * FLIP_STRENGTH);
-  const ty = round(dy * FLIP_STRENGTH);
-  // damp *towards 1*, not towards 0 — 1 is the identity for a scale
-  const kx = round(1 + (sx - 1) * FLIP_STRENGTH);
-  const ky = round(1 + (sy - 1) * FLIP_STRENGTH);
-
-  return `translate(${tx}px, ${ty}px) scale(${kx}, ${ky})`;
+  return `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
 };
 
 /**
@@ -201,8 +183,12 @@ export const flipTransform = (
  * easing in, a reveal animation). Both showed up as items glitching or jumping in sync with
  * something that had nothing to do with layout. Subtracting the container's own rect cancels it:
  * whatever moves container and child together contributes 0.
+ *
+ * The transition itself (duration, easing) is entirely the caller's: `itemAnimation` is spliced
+ * verbatim into `transition: transform ${itemAnimation}`. No default — CSS already has a syntax for
+ * this, the library doesn't need its own tuned constant.
  */
-const useFlip = (animateSize: boolean, animatePosition: boolean) => {
+const useFlip = (animateSize: boolean, animatePosition: boolean, itemAnimation: string | undefined) => {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const nodesRef = useRef<Map<string, HTMLDivElement> | undefined>(undefined);
   const rectsRef = useRef<Map<string, FlipBox> | undefined>(undefined);
@@ -239,7 +225,7 @@ const useFlip = (animateSize: boolean, animatePosition: boolean) => {
       el.style.transformOrigin = 'top left';
       el.style.transform = transform;
       el.getBoundingClientRect(); // flush, so the reset below actually transitions
-      el.style.transition = `transform ${FLIP_MS}ms ${FLIP_EASE}`;
+      el.style.transition = itemAnimation ? `transform ${itemAnimation}` : '';
       el.style.transform = '';
     }
 
@@ -285,6 +271,7 @@ export const Grid = memo((props: GridProps) => {
     showGrid = false,
     animateSize = false,
     animatePosition = false,
+    itemAnimation,
     className = '',
     style,
   } = props;
@@ -329,7 +316,7 @@ export const Grid = memo((props: GridProps) => {
     ...style,
   };
 
-  const { hostRef, itemRef } = useFlip(animateSize, animatePosition);
+  const { hostRef, itemRef } = useFlip(animateSize, animatePosition, itemAnimation);
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: arbitrary weighted layout, not tabular data — a real <table> would force row/column semantics the content doesn't have.

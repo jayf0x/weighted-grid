@@ -52,25 +52,25 @@ different things in the same JSX block was a real, reported point of confusion; 
   centered in the gap. Correct by construction: never drifts from the real gutter (unlike a naive
   `100% / n` division), and never bleeds into a semi-transparent item's own interior (unlike painting
   the container itself, which showed through translucent items).
-- **`animateSize`/`animatePosition`** — opt-in FLIP transforms (`useFlip` in `src/react.tsx`) for
-  smooth size/position transitions on re-layout. CSS Grid line/span values aren't natively
-  interpolable, so this measures each item's box pre/post-render and plays the delta back as a
-  `transform` that eases to identity — not a real grid-track animation. Off by default. Playback is
-  **damped** (`FLIP_STRENGTH`, currently 0.5): the item starts part-way back rather than exactly
-  where it was, which keeps the direction of the change legible at a fraction of the amplitude. A
-  textbook full-strength FLIP moves every item its whole layout delta at once, which on a grid is
-  far more motion than a re-layout warrants. Three things the implementation must keep doing, all
-  regressions that shipped once: boxes are measured
-  **relative to the grid container**, not the viewport (a viewport-relative delta absorbs page
-  scroll and any ancestor mid-transform, so items glitch for reasons unrelated to layout); and the
-  delta is **capped** — past `FLIP_MAX_TRAVEL`/`FLIP_MAX_SCALE` the item snaps, because replaying a
-  whole-grid reflow as a transform starts every item outside the container. The policy lives in the
-  pure `flipTransform()` so it's testable without a DOM (`tests/react-render.test.tsx`) — note the
-  caps are judged on the *raw* delta, not the damped playback, so retuning the damping can't
-  silently loosen them. The per-key
-  ref callbacks must also stay cached **across detach** — evicting them made the cache self-defeating
-  (fresh identity → forced detach → evict → repeat), which left FLIP with no previous box to animate
-  from at all.
+- **`animateSize`/`animatePosition`/`itemAnimation`** — opt-in FLIP transforms (`useFlip` in
+  `src/react.tsx`) for smooth size/position transitions on re-layout. CSS Grid line/span values
+  aren't natively interpolable, so this measures each item's box pre/post-render and plays the delta
+  back as a `transform` that eases to identity — not a real grid-track animation. Off by default
+  (`animateSize`/`animatePosition` gate *which* deltas get computed). `itemAnimation` is the CSS
+  `transition` value spliced into `transition: transform ${itemAnimation}` — duration, easing,
+  everything about the *how* is the caller's; the library used to hardcode a duration/easing/damping
+  triple (`FLIP_MS`/`FLIP_EASE`/`FLIP_STRENGTH`) and it just meant re-tuning JS constants every time
+  someone wanted a different feel. CSS already has a syntax for that. Two things the implementation
+  must keep doing, both regressions that shipped once: boxes are measured **relative to the grid
+  container**, not the viewport (a viewport-relative delta absorbs page scroll and any ancestor
+  mid-transform, so items glitch for reasons unrelated to layout); and the delta is **capped** —
+  past `FLIP_MAX_TRAVEL`/`FLIP_MAX_SCALE` the item snaps instead of animating, because replaying a
+  whole-grid reflow as a transform starts every item outside the container — that's not a timing
+  choice, it's "was this really the same item," so it stays internal to `flipTransform()` rather than
+  becoming a prop. The policy lives in that pure function so it's testable without a DOM
+  (`tests/react-render.test.tsx`). The per-key ref callbacks must also stay cached **across detach**
+  — evicting them made the cache self-defeating (fresh identity → forced detach → evict → repeat),
+  which left FLIP with no previous box to animate from at all.
 - **`preset`** — a `PresetFn` (`({ count, nrCols, nrRows }) => Partial<GridItemProps>[]`) that
   computes default props per item; explicit `GridItem` props still win. `src/presets.ts` ships
   `masonPreset`/`organicPreset`, exported only from the `weighted-grid/presets` subpath so unused

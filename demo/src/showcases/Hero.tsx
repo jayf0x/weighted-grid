@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { Grid, GridItem } from 'weighted-grid/react';
 import { useWidth } from '@/showcase/hooks';
+import { FLIP_TRANSITION } from '@/showcase/motion';
 import { CropMarks } from '@/showcase/primitives';
 import { seededWeight } from './seed';
 import { Tile } from './tiles';
@@ -68,7 +69,7 @@ function Specimen() {
   return (
     <div ref={ref} className="relative h-full w-full">
       <CropMarks />
-      <Grid nrCols={nrCols} gap={5} animateSize>
+      <Grid nrCols={nrCols} gap={5} animateSize itemAnimation={FLIP_TRANSITION}>
         {weights.slice(0, count).map((w, i) => {
           const content = CONTENT[i];
           return (
