@@ -1,10 +1,10 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App';
-import './styles/index.css';
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./styles/index.css";
 
-const root = document.getElementById('app');
-if (!root) throw new Error('#app missing from index.html');
+const root = document.getElementById("app");
+if (!root) throw new Error("#app missing from index.html");
 
 createRoot(root).render(
   <StrictMode>

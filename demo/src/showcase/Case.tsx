@@ -1,8 +1,9 @@
-import { motion } from 'motion/react';
-import { createContext, type ReactNode, useContext } from 'react';
-import { CaseBadge, CropMarks, PropChip } from './primitives';
-import { Source } from './Source';
-import type { Case as CaseDef, CaseIndex } from './types';
+import { motion } from "motion/react";
+import { createContext, type ReactNode, useContext } from "react";
+import { CaseBadge, CropMarks, PropChip } from "./primitives";
+import { Source } from "./Source";
+import type { Case as CaseDef, CaseIndex } from "./types";
+import { BackgroundHatch } from "@/components/BackgroundHatch";
 
 /* ─────────────────────────────────────────────────────────────────────────────
    The case frame — the one piece of chrome every showcase gets.
@@ -23,14 +24,18 @@ type CaseCtx = { def: CaseDef; at: CaseIndex; source?: string };
 
 const Ctx = createContext<CaseCtx | null>(null);
 
-export const CaseProvider = ({ value, children }: { value: CaseCtx; children: ReactNode }) => (
-  <Ctx.Provider value={value}>{children}</Ctx.Provider>
-);
+export const CaseProvider = ({
+  value,
+  children,
+}: {
+  value: CaseCtx;
+  children: ReactNode;
+}) => <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 
 const HEIGHTS = {
-  stage: 'h-[min(62vh,34rem)]',
-  tall: 'h-[min(82vh,46rem)]',
-  auto: '',
+  stage: "h-[min(62vh,34rem)]",
+  tall: "h-[min(82vh,46rem)]",
+  auto: "",
 } as const;
 
 export type CaseFrameProps = {
@@ -42,9 +47,13 @@ export type CaseFrameProps = {
   height?: keyof typeof HEIGHTS;
 };
 
-export function CaseFrame({ children, controls, height = 'stage' }: CaseFrameProps) {
+export function CaseFrame({
+  children,
+  controls,
+  height = "stage",
+}: CaseFrameProps) {
   const ctx = useContext(Ctx);
-  if (!ctx) throw new Error('<CaseFrame> must render inside a <CaseProvider>');
+  if (!ctx) throw new Error("<CaseFrame> must render inside a <CaseProvider>");
   const { def, at, source } = ctx;
 
   return (
@@ -53,7 +62,7 @@ export function CaseFrame({ children, controls, height = 'stage' }: CaseFramePro
       data-case={def.id}
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
+      viewport={{ once: true, margin: "-10% 0px -10% 0px" }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       className="line-t scroll-mt-24 py-12 lg:py-20"
     >
@@ -69,11 +78,25 @@ export function CaseFrame({ children, controls, height = 'stage' }: CaseFramePro
 
         <aside className="order-1 min-w-0 lg:order-2">
           <div className="lg:sticky lg:top-24">
+            <BackgroundHatch
+              className="w-4 absolute h-full right-0 translate-x-10"
+              style={{ backgroundAttachment: "local" }}
+            />
+
+            <BackgroundHatch
+              className="h-4 absolute w-full bottom-0 translate-5"
+              style={{ backgroundAttachment: "local" }}
+            />
+
             <CaseBadge index={at.index} total={at.total} />
 
-            <h2 className="headline mt-3 text-[clamp(2rem,3.4vw,2.9rem)] leading-[1.02] text-balance">{def.title}</h2>
+            <h2 className="headline mt-3 text-[clamp(2rem,3.4vw,2.9rem)] leading-[1.02] text-balance">
+              {def.title}
+            </h2>
 
-            <p className="mt-3 max-w-[38ch] text-[14px] leading-relaxed text-ink-2 text-pretty">{def.lede}</p>
+            <p className="mt-3 max-w-[38ch] text-[14px] leading-relaxed text-ink-2 text-pretty">
+              {def.lede}
+            </p>
 
             {def.props && def.props.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-1.5">

@@ -1,12 +1,13 @@
-import { useMemo } from 'react';
-import { Backdrop } from '@/showcase/Backdrop';
-import { CaseProvider } from '@/showcase/Case';
-import { GithubMark, NpmMark } from '@/showcase/icons';
-import { Rail, useActiveCase } from '@/showcase/Rail';
-import { ThemeToggle } from '@/showcase/theme';
-import { cases, sourceOf } from '@/showcases';
-import { Hero } from '@/showcases/Hero';
-import pkg from '../../package.json';
+import { useMemo } from "react";
+import { Backdrop } from "@/showcase/Backdrop";
+import { CaseProvider } from "@/showcase/Case";
+import { GithubMark, NpmMark } from "@/showcase/icons";
+import { Rail, useActiveCase } from "@/showcase/Rail";
+import { ThemeToggle } from "@/showcase/theme";
+import { cases, sourceOf } from "@/showcases";
+import { Hero } from "@/showcases/Hero";
+import pkg from "../../package.json";
+import { FluidText } from "@jayf0x/fluidity-js";
 
 /* ─────────────────────────────────────────────────────────────────────────────
    The sheet.
@@ -18,11 +19,19 @@ import pkg from '../../package.json';
    ───────────────────────────────────────────────────────────────────────────── */
 
 // 80rem — the backdrop anchors its hatched margins to half of this; keep the two in step.
-const COLUMN = 'mx-auto w-full max-w-[80rem] px-6 sm:px-10';
+const COLUMN = "mx-auto w-full max-w-[80rem] px-6 sm:px-10";
 
 const LINKS = [
-  { href: 'https://www.npmjs.com/package/weighted-grid', label: 'npm', Icon: NpmMark },
-  { href: 'https://github.com/jayf0x/weighted-grid', label: 'GitHub', Icon: GithubMark },
+  {
+    href: "https://www.npmjs.com/package/weighted-grid",
+    label: "npm",
+    Icon: NpmMark,
+  },
+  {
+    href: "https://github.com/jayf0x/weighted-grid",
+    label: "GitHub",
+    Icon: GithubMark,
+  },
 ];
 
 function TopBar() {
@@ -33,7 +42,9 @@ function TopBar() {
           <span className="font-display text-[17px] font-semibold tracking-[-0.01em] whitespace-nowrap">
             weighted-grid
           </span>
-          <span className="spec hidden transition-colors group-hover:text-ink-2 sm:inline">v{pkg.version}</span>
+          <span className="spec hidden transition-colors group-hover:text-ink-2 sm:inline">
+            v{pkg.version}
+          </span>
         </a>
 
         <div className="flex items-center gap-1">
@@ -76,7 +87,11 @@ export default function App() {
           return (
             <CaseProvider
               key={def.id}
-              value={{ def, at: { index: i + 1, total: cases.length }, source: sourceOf(def.id) }}
+              value={{
+                def,
+                at: { index: i + 1, total: cases.length },
+                source: sourceOf(def.id),
+              }}
             >
               <Component />
             </CaseProvider>

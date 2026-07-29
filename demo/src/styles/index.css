@@ -44,7 +44,6 @@
   /* one accent, used sparingly: signal vermilion */
   --accent: oklch(0.585 0.185 38);
   --accent-soft: color-mix(in oklab, var(--accent) 14%, transparent);
-
 }
 
 .light {
@@ -224,3 +223,17 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ::-webkit-scrollbar-track {
+  background: repeating-linear-gradient(
+    315deg,
+    var(--hatch) 0,
+    var(--hatch) 1px,
+    transparent 0,
+    transparent 50%
+  );
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+} */
