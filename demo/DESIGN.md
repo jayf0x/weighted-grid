@@ -49,7 +49,7 @@ Motion is used exactly three times, and CSS does the rest:
 
 1. **Page load** — one staggered reveal in the hero (`motion`).
 2. **Case entry** — a single fade-and-rise per case, `once: true` (`motion`).
-3. **Layout changes** — the library's own `animateSize`/`animatePosition` FLIP, which is the product.
+3. **Layout changes** — the library's own `animateSize` FLIP, which is the product.
 
 Everything else — hovers, toggles, the rail ticks, the source disclosure — is a CSS transition.
 Framer Motion earns its place on orchestration and nothing else; a `transition-colors` does not need
@@ -98,8 +98,21 @@ short bottom fade keeps the cut reading as a window rather than a bug.
 
 ## Motion that stays subtle
 
-Two things were making the FLIP transitions misbehave, and both are fixed in the library rather
-than papered over here:
+**`animatePosition` stays off.** This page had it on everywhere, and it was the single biggest
+source of visual noise: a control that reflows the grid moves nearly every tile, so animating
+position means the whole stage swims at once. The library defaults it to `false` for exactly this
+reason and the demo now respects that. `animateSize` alone is both calmer and more honest — a tile
+whose *size* didn't change doesn't animate at all, so the only thing that moves is the thing the
+control actually changed. On the stretch case that's 3 tiles out of 12, which is the point of the
+case.
+
+**Playback is damped.** A textbook FLIP starts the item exactly where it used to be, so every item
+travels its full layout delta at once. The library now plays back half of it (`FLIP_STRENGTH`),
+which keeps the direction of the change legible — you can still see which tiles grew — at half the
+amplitude. Acknowledge the change; don't perform it.
+
+Two further things were making the transitions misbehave, both fixed in the library rather than
+papered over here:
 
 1. **Measurement was viewport-relative.** `getBoundingClientRect()` absorbs anything that moves the
    grid as a whole — page scroll, an ancestor mid-transform — so tiles glitched in sync with things

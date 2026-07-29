@@ -8,7 +8,7 @@ export function DataGrid({ data, ...overrides }: { data: ReportCase } & Omit<Gri
   // same rule as the other cases: no caption in a cell too small to hold one
   const hasLabels = typeof overrides.rowHeight !== 'number' || overrides.rowHeight >= 44;
   return (
-    <Grid animateSize animatePosition {...data.meta} {...overrides}>
+    <Grid animateSize {...data.meta} {...overrides}>
       {data.tiles.map((tile, i) => {
         const { kind = 'item', ...item } = tile;
         const spec = [

@@ -38,7 +38,7 @@ function Weight() {
       }
     >
       <div ref={stageRef}>
-        <Grid nrCols={values.nrCols} gap={values.gap} rowHeight={rowHeight} animateSize animatePosition>
+        <Grid nrCols={values.nrCols} gap={values.gap} rowHeight={rowHeight} animateSize>
           {Array.from({ length: values.count }, (_, i) => {
             const w = weightOf(i);
             return (

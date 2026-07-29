@@ -68,7 +68,7 @@ function Specimen() {
   return (
     <div ref={ref} className="relative h-full w-full">
       <CropMarks />
-      <Grid nrCols={nrCols} gap={5} animateSize animatePosition>
+      <Grid nrCols={nrCols} gap={5} animateSize>
         {weights.slice(0, count).map((w, i) => {
           const content = CONTENT[i];
           return (

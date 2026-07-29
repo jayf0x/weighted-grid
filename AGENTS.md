@@ -55,13 +55,19 @@ different things in the same JSX block was a real, reported point of confusion; 
 - **`animateSize`/`animatePosition`** — opt-in FLIP transforms (`useFlip` in `src/react.tsx`) for
   smooth size/position transitions on re-layout. CSS Grid line/span values aren't natively
   interpolable, so this measures each item's box pre/post-render and plays the delta back as a
-  `transform` that eases to identity — not a real grid-track animation. Off by default. Two things
-  the implementation must keep doing, both regressions that shipped once: boxes are measured
+  `transform` that eases to identity — not a real grid-track animation. Off by default. Playback is
+  **damped** (`FLIP_STRENGTH`, currently 0.5): the item starts part-way back rather than exactly
+  where it was, which keeps the direction of the change legible at a fraction of the amplitude. A
+  textbook full-strength FLIP moves every item its whole layout delta at once, which on a grid is
+  far more motion than a re-layout warrants. Three things the implementation must keep doing, all
+  regressions that shipped once: boxes are measured
   **relative to the grid container**, not the viewport (a viewport-relative delta absorbs page
   scroll and any ancestor mid-transform, so items glitch for reasons unrelated to layout); and the
   delta is **capped** — past `FLIP_MAX_TRAVEL`/`FLIP_MAX_SCALE` the item snaps, because replaying a
   whole-grid reflow as a transform starts every item outside the container. The policy lives in the
-  pure `flipTransform()` so it's testable without a DOM (`tests/react-render.test.tsx`). The per-key
+  pure `flipTransform()` so it's testable without a DOM (`tests/react-render.test.tsx`) — note the
+  caps are judged on the *raw* delta, not the damped playback, so retuning the damping can't
+  silently loosen them. The per-key
   ref callbacks must also stay cached **across detach** — evicting them made the cache self-defeating
   (fresh identity → forced detach → evict → repeat), which left FLIP with no previous box to animate
   from at all.
@@ -71,6 +77,10 @@ different things in the same JSX block was a real, reported point of confusion; 
   presets tree-shake away. `Grid` memoizes the preset call on `[preset, items.length, nrCols,
   nrRows]` — pass a stable function (wrap a custom preset in `useCallback`) or it recomputes every
   render.
+
+`animatePosition` is off by default on purpose: any control that reflows a grid moves most of its
+items, and animating that reads as the whole thing swimming. Turn it on only for grids where items
+nudge rather than jump — the demo tried it everywhere and had to back it out.
 
 Strict source order is always preserved; placement is deterministic.
 

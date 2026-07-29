@@ -75,7 +75,7 @@ function Responsive() {
     >
       <div ref={hostRef}>
         <div className="relative" style={{ width: width ?? '100%' }}>
-          <Grid nrCols={nrCols} gap={GAP} rowHeight={rowHeight} animateSize animatePosition>
+          <Grid nrCols={nrCols} gap={GAP} rowHeight={rowHeight} animateSize>
             {Array.from({ length: TILES }, (_, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: specimen tiles are positional — the index *is* the identity
               <GridItem key={i} cols={WIDE.has(i) ? Math.min(2, nrCols) : undefined} weight={1}>

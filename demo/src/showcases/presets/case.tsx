@@ -39,7 +39,7 @@ function Presets() {
   return (
     <CaseFrame controls={panel}>
       <div ref={stageRef}>
-        <Grid nrCols={NR_COLS} gap={GAP} rowHeight={rowHeight} preset={preset} animateSize animatePosition>
+        <Grid nrCols={NR_COLS} gap={GAP} rowHeight={rowHeight} preset={preset} animateSize>
           {Array.from({ length: COUNT }, (_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: specimen tiles are positional — the index *is* the identity
             <GridItem key={i}>

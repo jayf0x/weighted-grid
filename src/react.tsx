@@ -121,7 +121,11 @@ const gridLinesStyle = (nrCols: number, rowCount: number, gapCss: string): CSSPr
   return layers.length ? { backgroundImage: layers.join(',') } : {};
 };
 
-const FLIP_MS = 200;
+const FLIP_MS = 180;
+// `ease-out`, not `ease`: a FLIP starts at the old box and settles into the new one, so the motion
+// should decelerate on arrival. A symmetric curve makes it accelerate away from where the item
+// already was, which is the part that reads as a lurch.
+const FLIP_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
 /** Past this much movement, snapping beats animating.
  *
@@ -134,6 +138,16 @@ const FLIP_MAX_TRAVEL = 1.5;
 
 /** Same idea for `animateSize`: a tile that has to grow more than this snaps instead. */
 const FLIP_MAX_SCALE = 2.5;
+
+/** How much of the delta actually gets played back, 0–1.
+ *
+ * A textbook FLIP starts the item exactly where it used to be, which on a grid means every item
+ * travelling its full layout change at once — technically correct, and far more motion than anyone
+ * wants to watch on a re-layout. Starting part-way there keeps the *direction* legible (you can see
+ * which tiles grew and which shrank) at a fraction of the amplitude, which is the whole point of the
+ * effect: acknowledge the change, don't perform it. Opinionated on purpose — this is the value the
+ * demo landed on after tuning it against real layouts, not a knob. */
+const FLIP_STRENGTH = 0.5;
 
 /** An item's box relative to the grid container. */
 export type FlipBox = { left: number; top: number; width: number; height: number };
@@ -159,12 +173,20 @@ export const flipTransform = (
   const sy = animateSize ? prev.height / next.height : 1;
   if (!dx && !dy && sx === 1 && sy === 1) return null;
 
-  // too big a jump to read as motion — let it snap
+  // The caps are judged on the *real* layout change, not the damped playback: whether a change is
+  // too big to read as motion is a fact about the layout, and shouldn't move when the damping does.
   const travel = Math.max(Math.abs(dx) / next.width, Math.abs(dy) / next.height);
   const scale = Math.max(sx, sy, 1 / sx, 1 / sy);
   if (travel > FLIP_MAX_TRAVEL || scale > FLIP_MAX_SCALE) return null;
 
-  return `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
+  const round = (n: number) => Math.round(n * 1000) / 1000;
+  const tx = round(dx * FLIP_STRENGTH);
+  const ty = round(dy * FLIP_STRENGTH);
+  // damp *towards 1*, not towards 0 — 1 is the identity for a scale
+  const kx = round(1 + (sx - 1) * FLIP_STRENGTH);
+  const ky = round(1 + (sy - 1) * FLIP_STRENGTH);
+
+  return `translate(${tx}px, ${ty}px) scale(${kx}, ${ky})`;
 };
 
 /**
@@ -217,7 +239,7 @@ const useFlip = (animateSize: boolean, animatePosition: boolean) => {
       el.style.transformOrigin = 'top left';
       el.style.transform = transform;
       el.getBoundingClientRect(); // flush, so the reset below actually transitions
-      el.style.transition = `transform ${FLIP_MS}ms ease`;
+      el.style.transition = `transform ${FLIP_MS}ms ${FLIP_EASE}`;
       el.style.transform = '';
     }
 
