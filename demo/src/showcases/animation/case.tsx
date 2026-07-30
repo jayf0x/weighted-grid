@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Grid, GridItem } from 'weighted-grid/react';
-import { CaseFrame } from '@/showcase/Case';
-import { range, segment, useControls } from '@/showcase/controls';
-import type { Case } from '@/showcase/types';
-import { Tile } from '../tiles';
+import { useEffect, useState } from "react";
+import { Grid, GridItem } from "weighted-grid/react";
+import { CaseFrame } from "@/showcase/Case";
+import { range, segment, useControls } from "@/showcase/controls";
+import type { Case } from "@/showcase/types";
+import { Tile } from "../tiles";
 
 /* Four tiles, two sliding dividers. The layout is a pure function of one clock:
  *
@@ -23,17 +23,24 @@ const STEP_RAD = 0.7;
 /** Straight from easingwizard.com — the site's Tailwind output with the underscores unpacked. */
 const EASINGS = {
   glide:
-    'linear(0,0.013 1%,0.051 2.2%,0.404 9.8%,0.51 12.6%,0.602 15.5%,0.683 18.7%,0.754 22.2%,0.813 26%,0.861 30.2%,0.9 34.8%,0.931 40%,0.972 52.7%,0.992 70.2%,1)',
-  anticipate: 'cubic-bezier(0.8,-0.4,0.5,1)',
+    "linear(0,0.013 1%,0.051 2.2%,0.404 9.8%,0.51 12.6%,0.602 15.5%,0.683 18.7%,0.754 22.2%,0.813 26%,0.861 30.2%,0.9 34.8%,0.931 40%,0.972 52.7%,0.992 70.2%,1)",
+  anticipate: "cubic-bezier(0.8,-0.4,0.5,1)",
   elastic:
-    'linear(0,0.029 1.3%,0.119 2.8%,0.659 8.7%,0.871 11.6%,1.009 14.6%,1.052 16.2%,1.078 17.9%,1.088 19.7%,1.085 21.7%,1.014 31.4%,0.993 38%,1.001 57.6%,1)',
+    "linear(0,0.029 1.3%,0.119 2.8%,0.659 8.7%,0.871 11.6%,1.009 14.6%,1.052 16.2%,1.078 17.9%,1.088 19.7%,1.085 21.7%,1.014 31.4%,0.993 38%,1.001 57.6%,1)",
   overshoot:
-    'linear(0,0.49 7.4%,0.864 15.3%,1.005 19.4%,1.12 23.7%,1.206 28.1%,1.267 32.8%,1.296 36.4%,1.311 40.2%,1.313 44.2%,1.301 48.6%,1.252 56.9%,1.105 74.4%,1.048 82.5%,1.011 91.1%,1)',
+    "linear(0,0.49 7.4%,0.864 15.3%,1.005 19.4%,1.12 23.7%,1.206 28.1%,1.267 32.8%,1.296 36.4%,1.311 40.2%,1.313 44.2%,1.301 48.6%,1.252 56.9%,1.105 74.4%,1.048 82.5%,1.011 91.1%,1)",
+  // smooth:
+  //   "linear(0,0.49_7.4%,0.864_15.3%,1.005_19.4%,1.12_23.7%,1.206_28.1%,1.267_32.8%,1.296_36.4%,1.311_40.2%,1.313_44.2%,1.301_48.6%,1.252_56.9%,1.105_74.4%,1.048_82.5%,1.011_91.1%,1)",
+  // default: "",
 } as const;
 
 const SCHEMA = {
-  easing: segment('easing', 'glide', Object.keys(EASINGS) as (keyof typeof EASINGS)[]),
-  ms: range('duration', 900, { min: 150, max: 2000, step: 50, unit: 'ms' }),
+  easing: segment(
+    "easing",
+    "glide",
+    Object.keys(EASINGS) as (keyof typeof EASINGS)[],
+  ),
+  ms: range("duration", 900, { min: 150, max: 2000, step: 50, unit: "ms" }),
 };
 
 /** A split position in [0,1] as a whole number of cells, never collapsing a side to nothing. */
@@ -45,7 +52,7 @@ function Animation() {
   const step = () => setT((v) => v + STEP_RAD);
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const id = window.setInterval(() => {
       if (!document.hidden) setT((v) => v + STEP_RAD);
     }, STEP_MS);
@@ -78,7 +85,7 @@ function Animation() {
             advance now
           </button>
           <p className="mt-4 border-t border-rule pt-3 text-[13px] leading-relaxed text-ink-3">
-            The dividers move every 2s on their own. Curves are copied out of{' '}
+            The dividers move every 2s on their own. Curves are copied out of{" "}
             <a
               href="https://easingwizard.com/"
               target="_blank"
@@ -87,7 +94,8 @@ function Animation() {
             >
               easingwizard.com
             </a>
-            , which is where the CSS <code className="font-mono">linear()</code> ones came from.
+            , which is where the CSS <code className="font-mono">linear()</code>{" "}
+            ones came from.
           </p>
         </>
       }
@@ -114,9 +122,9 @@ function Animation() {
 }
 
 export const showcase: Case = {
-  id: 'animation',
-  title: 'Animation',
-  lede: 'Grid spans are integers: they jump, they do not interpolate. animateSize/animatePosition measure each item before and after a re-layout and play the difference back as a transform, and itemAnimation is the CSS transition value that does it — any duration, any curve, including linear().',
-  props: ['animateSize', 'animatePosition', 'itemAnimation'],
+  id: "animation",
+  title: "Animation",
+  lede: "Grid spans are integers: they jump, they do not interpolate. animateSize/animatePosition measure each item before and after a re-layout and play the difference back as a transform, and itemAnimation is the CSS transition value that does it — any duration, any curve, including linear().",
+  props: ["animateSize", "animatePosition", "itemAnimation"],
   Component: Animation,
 };

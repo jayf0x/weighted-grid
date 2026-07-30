@@ -1,17 +1,17 @@
-import { useRef, useState } from 'react';
-import { Grid, GridItem } from 'weighted-grid/react';
-import { CaseFrame } from '@/showcase/Case';
-import { range, useControls } from '@/showcase/controls';
-import { useSquareRows } from '@/showcase/hooks';
-import { FLIP_TRANSITION } from '@/showcase/motion';
-import type { Case } from '@/showcase/types';
-import { seededWeight } from '../seed';
-import { Tile } from '../tiles';
+import { useRef, useState } from "react";
+import { Grid, GridItem } from "weighted-grid/react";
+import { CaseFrame } from "@/showcase/Case";
+import { range, useControls } from "@/showcase/controls";
+import { useSquareRows } from "@/showcase/hooks";
+import { DEMO_ITEM_ANIMATION } from "@/showcase/motion";
+import type { Case } from "@/showcase/types";
+import { seededWeight } from "../seed";
+import { Tile, Void } from "../tiles";
 
 const SCHEMA = {
-  nrCols: range('columns', 9, { min: 3, max: 16 }),
-  count: range('tiles', 30, { min: 4, max: 64 }),
-  gap: range('gap', 6, { min: 0, max: 24, unit: 'px' }),
+  nrCols: range("columns", 9, { min: 3, max: 16 }),
+  count: range("tiles", 30, { min: 4, max: 64 }),
+  gap: range("gap", 6, { min: 0, max: 24, unit: "px" }),
 };
 
 /** `weight` on its own: no axis pinned anywhere, so every tile is a square whose side is its weight.
@@ -21,31 +21,43 @@ function Weight() {
   const stageRef = useRef<HTMLDivElement>(null);
   const rowHeight = useSquareRows(stageRef, values.nrCols, values.gap);
   // a 40px tile with a caption in it is just noise — labels appear once a cell can hold one
-  const hasLabels = typeof rowHeight === 'number' && rowHeight >= 44;
+  const hasLabels = typeof rowHeight === "number" && rowHeight >= 44;
   const [weights, setWeights] = useState<Record<number, number>>({});
 
   const weightOf = (i: number) => weights[i] ?? seededWeight(i);
-  const cycle = (i: number) => setWeights((w) => ({ ...w, [i]: (weightOf(i) % 4) + 1 }));
+  const cycle = (i: number) =>
+    setWeights((w) => ({ ...w, [i]: (weightOf(i) % 4) + 1 }));
 
   return (
     <CaseFrame
       controls={
         <>
-          {panel}
           <p className="mt-5 border-t border-rule pt-3 text-[13px] leading-relaxed text-ink-3">
             Click any tile to cycle its weight 1 → 4.
           </p>
+          {panel}
         </>
       }
     >
       <div ref={stageRef}>
-        <Grid nrCols={values.nrCols} gap={values.gap} rowHeight={rowHeight} animateSize itemAnimation={FLIP_TRANSITION}>
+        <Grid
+          nrCols={values.nrCols}
+          gap={values.gap}
+          rowHeight={rowHeight}
+          animateSize
+          itemAnimation={DEMO_ITEM_ANIMATION}
+          fillComponent={<Void />}
+        >
           {Array.from({ length: values.count }, (_, i) => {
             const w = weightOf(i);
             return (
               // biome-ignore lint/suspicious/noArrayIndexKey: specimen tiles are positional — the index *is* the identity
               <GridItem key={i} weight={w}>
-                <Tile n={w - 1} label={hasLabels ? `w${w}` : undefined} onClick={() => cycle(i)} />
+                <Tile
+                  n={w - 1}
+                  label={hasLabels ? `w${w}` : undefined}
+                  onClick={() => cycle(i)}
+                />
               </GridItem>
             );
           })}
@@ -56,9 +68,9 @@ function Weight() {
 }
 
 export const showcase: Case = {
-  id: 'weight',
-  title: 'Weight',
-  lede: 'One number per item, relative to the others, like flex. With neither axis pinned it sizes both, so weight 2 is a 2×2 block and equal weights are equal squares.',
-  props: ['weight', 'nrCols', 'gap'],
+  id: "weight",
+  title: "Weight",
+  lede: "One number per item, relative to the others, like flex. With neither axis pinned it sizes both, so weight 2 is a 2×2 block and equal weights are equal squares.",
+  props: ["weight", "nrCols", "gap"],
   Component: Weight,
 };

@@ -1,12 +1,13 @@
-import { ArrowDown, Check, Copy } from 'lucide-react';
-import { motion } from 'motion/react';
-import { useEffect, useRef, useState } from 'react';
-import { Grid, GridItem } from 'weighted-grid/react';
-import { useWidth } from '@/showcase/hooks';
-import { FLIP_TRANSITION } from '@/showcase/motion';
-import { CropMarks } from '@/showcase/primitives';
-import { seededWeight } from './seed';
-import { Tile } from './tiles';
+import { ArrowDown, Check, Copy } from "lucide-react";
+import { motion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import { Grid, GridItem } from "weighted-grid/react";
+import { useWidth } from "@/showcase/hooks";
+import { DEMO_ITEM_ANIMATION } from "@/showcase/motion";
+import { CropMarks } from "@/showcase/primitives";
+import { seededWeight } from "./seed";
+import { Tile, Void } from "./tiles";
+import { BackgroundHatch } from "@/components/BackgroundHatch";
 
 const COUNT = 40;
 const CYCLE_MS = 2600;
@@ -19,18 +20,20 @@ const photo = (n: number) => `${import.meta.env.BASE_URL}organic/img-${n}.jpg`;
 const CONTENT: Record<number, { photo: number } | { text: string }> = {
   1: { photo: 3 },
   4: {
-    text: 'Any child, any content. The engine only decides how much room it gets.',
+    text: "Lorem Gibson",
   },
   7: { photo: 0 },
   12: { photo: 6 },
-  17: { text: 'Source order is preserved, always.' },
+  17: { text: "Lorem Gibson" },
   21: { photo: 8 },
   28: { photo: 2 },
-  33: { text: 'Zero runtime dependencies. react is a peer.' },
+  33: { text: "Lorem Gibson" },
 };
 
 /** Indices the cycler is allowed to touch — everything that isn't holding content. */
-const FREE = Array.from({ length: COUNT }, (_, i) => i).filter((i) => !(i in CONTENT));
+const FREE = Array.from({ length: COUNT }, (_, i) => i).filter(
+  (i) => !(i in CONTENT),
+);
 
 /** The specimen: the library laying out its own hero. One tile is re-weighted every few seconds and
  * everything else re-flows around it — the argument for the whole package, made before a word of it
@@ -47,11 +50,13 @@ function Specimen() {
   // content tiles never drop to 1×1 — a postage-stamp photo and a clipped sentence are worse than
   // no content at all, so they start bigger and the cycler leaves them alone
   const [weights, setWeights] = useState<number[]>(() =>
-    Array.from({ length: COUNT }, (_, i) => (i in CONTENT ? Math.max(2, seededWeight(i)) : seededWeight(i))),
+    Array.from({ length: COUNT }, (_, i) =>
+      i in CONTENT ? Math.max(2, seededWeight(i)) : seededWeight(i),
+    ),
   );
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let timer = 0;
     const tick = () => {
       if (!document.hidden) {
@@ -71,7 +76,13 @@ function Specimen() {
   return (
     <div ref={ref} className="relative h-full w-full">
       <CropMarks />
-      <Grid nrCols={nrCols} gap={5} animateSize itemAnimation={FLIP_TRANSITION}>
+      <Grid
+        nrCols={nrCols}
+        gap={5}
+        animateSize
+        itemAnimation={DEMO_ITEM_ANIMATION}
+        fillComponent={<Void />}
+      >
         {weights.slice(0, count).map((w, i) => {
           const content = CONTENT[i];
           return (
@@ -79,7 +90,7 @@ function Specimen() {
             // text, and a square is what a photo wants anyway.
             // biome-ignore lint/suspicious/noArrayIndexKey: specimen tiles are positional — the index *is* the identity
             <GridItem key={i} weight={w} stretch={content ? 0 : undefined}>
-              {content && 'photo' in content ? (
+              {content && "photo" in content ? (
                 <div className="h-full w-full overflow-hidden border border-rule bg-sunk">
                   <img
                     src={photo(content.photo)}
@@ -90,7 +101,9 @@ function Specimen() {
                 </div>
               ) : content ? (
                 <div className="flex h-full w-full items-end overflow-hidden border border-rule bg-raised p-2.5">
-                  <p className="line-clamp-4 text-[11px] leading-snug text-ink-2">{content.text}</p>
+                  <p className="line-clamp-4 text-[11px] leading-snug text-ink-2">
+                    {content.text}
+                  </p>
                 </div>
               ) : (
                 <Tile n={w - 1} />
@@ -104,13 +117,13 @@ function Specimen() {
 }
 
 const INSTALL = {
-  bun: 'bun add weighted-grid',
-  npm: 'npm i weighted-grid',
+  bun: "bun add weighted-grid",
+  npm: "npm i weighted-grid",
 } as const;
 type Manager = keyof typeof INSTALL;
 
 function Install() {
-  const [manager, setManager] = useState<Manager>('bun');
+  const [manager, setManager] = useState<Manager>("bun");
   const [isCopied, setCopied] = useState(false);
   const command = INSTALL[manager];
 
@@ -124,8 +137,10 @@ function Install() {
             onClick={() => setManager(m)}
             aria-pressed={manager === m}
             className={
-              'spec cursor-pointer px-3 py-2 transition-colors duration-150 ' +
-              (manager === m ? 'border-b border-accent text-accent' : 'hover:text-ink-2')
+              "spec cursor-pointer px-3 py-2 transition-colors duration-150 " +
+              (manager === m
+                ? "border-b border-accent text-accent"
+                : "hover:text-ink-2")
             }
           >
             {m}
@@ -147,7 +162,11 @@ function Install() {
           {command}
         </code>
         <span className="shrink-0 text-ink-3 transition-colors group-hover:text-accent">
-          {isCopied ? <Check className="size-3.5 text-accent" /> : <Copy className="size-3.5" />}
+          {isCopied ? (
+            <Check className="size-3.5 text-accent" />
+          ) : (
+            <Copy className="size-3.5" />
+          )}
           <span className="sr-only">Copy install command</span>
         </span>
       </button>
@@ -165,32 +184,38 @@ const stagger = (i: number) => ({
   },
 });
 
-export function Hero({ version }: { version: string }) {
+export function Hero() {
   return (
     <header className="grid items-center gap-10 py-16 lg:min-h-[78vh] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16 lg:py-24">
       <div className="min-w-0">
-        <motion.p {...stagger(0)} className="spec bg-accent w-fit">
-          weighted-grid <span className="text-ink-3">·</span> v{version}
-        </motion.p>
+        <motion.div {...stagger(0)} className="spec bg-accent  w-3/12 h-1">
+          {/* <BackgroundHatch className="w-full h-full" /> */}
+        </motion.div>
 
         <motion.h1
           {...stagger(1)}
-          className="headline mt-6 text-[clamp(3rem,7.5vw,5.75rem)] leading-[0.92] text-balance"
+          className="headline mt-6 text-[clamp(3rem,7.5vw,5.75rem)] leading-[1.2] text-balance"
         >
-          Sized by weight.
+          Weighted
           <br />
-          Rendered as
-          <span className="text-accent"> CSS Grid</span>.
+          <span className="text-accent"> Grid</span>.
         </motion.h1>
 
-        <motion.p {...stagger(2)} className="mt-7 max-w-[46ch] text-[15px] leading-relaxed text-ink-2 text-pretty">
-          Per item and per axis: a relative weight, an exact span, or one of each. Empty cells go to whichever elastic
-          neighbour can reach them, and the rest to a fill component. Source order never changes.
+        <motion.p
+          {...stagger(2)}
+          className="mt-7 max-w-[46ch] text-[15px] leading-relaxed text-ink-2 text-pretty"
+        >
+          relative weight, an exact span, or one of each. Empty cells go to
+          whichever elastic neighbour can reach them, and the rest to a fill
+          component. Source order never changes.
         </motion.p>
 
-        <motion.p {...stagger(3)} className="mt-4 max-w-[46ch] text-[14px] leading-relaxed text-ink-3">
-          It exists because an organic project index needs both: room to place things by hand, and a rule that fills in
-          everything you didn't. The grids I tried wanted a layout per breakpoint and gave nothing to compute with.
+        <motion.p
+          {...stagger(3)}
+          className="mt-4 max-w-[46ch] text-[14px] leading-relaxed text-ink-3"
+        >
+          It exists because an organic project needs both: room to place things
+          by hand, and a rule that fills in everything you didn't.
         </motion.p>
 
         <motion.div {...stagger(4)} className="mt-9 flex flex-col gap-4">
