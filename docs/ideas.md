@@ -37,9 +37,13 @@ library already solve the hard part, and does that library's API map cleanly ont
 supplies. Floated but deliberately not built:
 
 - **A small set of exported curve strings** — `bounce`/`wiggle`/`spring`/`glide`, the same
-  tree-shakable-subpath pattern as `presets.ts` (e.g. `weighted-grid/motion`). Low cost since
+  tree-shakable-subpath pattern as `src/presets/` (e.g. `weighted-grid/motion`). Low cost since
   they're just strings, but genuinely YAGNI until more than one consumer wants the same curve —
-  right now the demo covers that with its own one-line `demo/src/showcase/motion.ts` constant.
+  right now the demo covers that with its own one-line `demo/src/showcase/motion.ts` constant, plus
+  four named curves in `demo/src/showcases/animation/case.tsx` copied straight out of
+  [easingwizard.com](https://easingwizard.com/). That's the argument against shipping them: a
+  generator already exists, produces better curves than a hardcoded four would be, and its output is
+  a string you paste. If this ever ships, ship a pointer to that site instead.
 - **`animateFn={(index, box) => ...}`** — a function given each item's index and post-layout box
   (`{ left, top, width, height }`), returning a transform or transition per item. This is real
   added flexibility `itemAnimation` can't express — per-item stagger (a "wave" effect keyed off

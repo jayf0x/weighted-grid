@@ -72,7 +72,7 @@ different things in the same JSX block was a real, reported point of confusion; 
   — evicting them made the cache self-defeating (fresh identity → forced detach → evict → repeat),
   which left FLIP with no previous box to animate from at all.
 - **`preset`** — a `PresetFn` (`({ count, nrCols, nrRows }) => Partial<GridItemProps>[]`) that
-  computes default props per item; explicit `GridItem` props still win. `src/presets.ts` ships
+  computes default props per item; explicit `GridItem` props still win. `src/presets/` ships
   `masonPreset`/`organicPreset`, exported only from the `weighted-grid/presets` subpath so unused
   presets tree-shake away. `Grid` memoizes the preset call on `[preset, items.length, nrCols,
   nrRows]` — pass a stable function (wrap a custom preset in `useCallback`) or it recomputes every
@@ -80,7 +80,9 @@ different things in the same JSX block was a real, reported point of confusion; 
 
 `animatePosition` is off by default on purpose: any control that reflows a grid moves most of its
 items, and animating that reads as the whole thing swimming. Turn it on only for grids where items
-nudge rather than jump — the demo tried it everywhere and had to back it out.
+nudge rather than jump — the demo tried it everywhere and had to back it out, and now uses it in
+exactly one case (`showcases/animation`, four tiles and two sliding dividers), which is also the
+only stage where an easing curve is judgeable at all.
 
 Strict source order is always preserved; placement is deterministic.
 
@@ -103,7 +105,8 @@ Strict source order is always preserved; placement is deterministic.
   Everything framework-agnostic lives in `src/core.ts` instead.
 - `src/index.ts` — package entry; re-exports `Grid`/`GridItem` + types from `./react`. `react` is a
   **peer dependency**, not bundled — `weighted-grid/core` has no such peer and works anywhere.
-- `src/presets.ts` — `PresetFn` and the built-in presets (`masonPreset`, `organicPreset`). Its own
+- `src/presets/` — `PresetFn` and the built-in presets (`masonPreset`, `organicPreset`), one file each.
+  Its own
   entry point/build target (`weighted-grid/presets`), not re-exported from `src/index.ts`, so a
   preset's code (e.g. `organicPreset`'s noise generator) tree-shakes away for anyone who doesn't
   import it. **Mission: grow this list.** `masonPreset`/`organicPreset` are two points in a much
@@ -221,7 +224,7 @@ See `demo/DESIGN.md` for the design system (the "spec sheet" direction, tokens, 
 for why the layer split below exists — this section documents *what* is there, that doc explains
 *why*.
 
-The unit of the page is a **case** (as in showcase), numbered "CASE 03/05". Not "plate", not "story",
+The unit of the page is a **case** (as in showcase), numbered "CASE 03/06". Not "plate", not "story",
 not "example" — one word, used in the types, the folder names, the badge, and `--case=N` on the QA
 script.
 
@@ -238,9 +241,10 @@ another project unchanged.
     (title, number, source) arrives through context from the page, so the page never reaches into a
     case to render its controls elsewhere.
   - `controls.tsx` — schema in, typed values + a rendered panel out. Three kinds only (`range`,
-    `toggle`, `segment`); a case needing a fourth is a case trying to be documentation. Not Leva:
-    Leva ships its own DOM and theme, which this design would have to fight, and this is ~180 lines
-    against the page's own tokens.
+    `toggle`, `segment`); a case needing a fourth is a case trying to be documentation. Wrap any of
+    them in `when(control, values => …)` to show it only in the mode it applies to — hidden, not
+    disabled. Not Leva: Leva ships its own DOM and theme, which this design would have to fight, and
+    this is ~190 lines against the page's own tokens.
   - `Source.tsx` — the case's own source as a numbered listing, with copy. Deliberately not
     syntax-highlighted (see the file's own comment).
   - `Backdrop.tsx` — hatched margins flanking the content column (the Tailwind-site 315° gradient
@@ -250,7 +254,9 @@ another project unchanged.
   - `Rail.tsx` — margin ruler + `useActiveCase` scroll spy. `theme.tsx` — three-way light/auto/dark
     (lucide icons), painted before first paint by the inline `_setTheme` in `index.html`.
     `icons.tsx` — the two brand marks lucide dropped. `primitives.tsx` — `Hatch`, `CropMarks`,
-    `Spec`, `PropChip`, `CaseBadge`. `hooks.ts` — `useWidth`, `useSquareRows`.
+    `Spec`, `PropChip`, `CaseBadge`. `hooks.ts` — `useBox`/`useWidth` (one
+    ResizeObserver), `useSquareRows` (px `rowHeight` = column width) and `useSquareRowCount` (the
+    inverse: keep `rowHeight="auto"` and pass the number of rows that fills the stage).
 - `demo/src/showcases/` — **the repo-specific layer.** One folder per case.
   - Add a case: write `demo/src/showcases/<id>/case.tsx` exporting `showcase: Case`, then add its id
     to `ORDER` in `demo/src/showcases/index.ts`. Both the module and its raw source are globbed
@@ -262,11 +268,13 @@ another project unchanged.
   - `tiles.tsx` — `Tile`/`Void`/`Filler`, monochrome so layouts read as *shape*. `seed.ts` —
     deterministic opening weights, so first impressions and screenshots are stable. `DataGrid.tsx` —
     the one renderer for plain-data cases.
-  - `report.ts` — the two *reference* cases (`propMatrix`, `pinnedSpans`) as plain data, exported as
-    `reportCases`. `scripts/dev/dev-report-grid.ts` imports this exact array, so its QA report and
-    the rendered page can never disagree; `--case=N` indexes it. `pinnedSpans` is tuned so the
-    stretch case has real dead zones across the whole range of its cap — retune it against
-    `--case=1 --stretch=0` if you change it.
+  - `report.ts` — plain-data cases, exported as `reportCases`. `scripts/dev/dev-report-grid.ts`
+    imports this exact array, so its QA report and the rendered page can never disagree; `--case=N`
+    indexes it. `pinnedSpans` (`--case=1`) is what the stretch case renders, and is tuned so *every*
+    step of the cap closes cells the step below it couldn't while a few boxed-in cells survive even
+    at ∞ — retune it across the whole range (`--stretch=0..6`), not just at 0, if you change it.
+    `propMatrix` (`--case=0`) is QA-only now: no case renders it (an exhaustive matrix reads as a
+    spec sheet), but `tests/dev-report-grid.test.ts` anchors its baselines to it.
 
 **The stage is a fixed box and its content is clipped** (`HEIGHTS` in `Case.tsx`, `overflow-hidden`,
 plus a short fade so the cut reads as a window rather than a bug). Every case has controls that

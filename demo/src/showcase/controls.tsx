@@ -12,7 +12,15 @@ import { useCallback, useMemo, useState } from 'react';
    someone else's panel and more honest than pretending it's configurable.
    ───────────────────────────────────────────────────────────────────────────── */
 
-export type RangeControl = {
+/** Fields every control shares. */
+type Base = {
+  /** Render this control only when the predicate holds — for a knob that belongs to one mode of a
+   * segment above it. Hidden means hidden, not disabled: a control that does nothing in the current
+   * mode is worse than no control. */
+  when?: (values: Record<string, unknown>) => boolean;
+};
+
+export type RangeControl = Base & {
   kind: 'range';
   label: string;
   value: number;
@@ -25,9 +33,9 @@ export type RangeControl = {
   format?: (v: number) => string;
 };
 
-export type ToggleControl = { kind: 'toggle'; label: string; value: boolean };
+export type ToggleControl = Base & { kind: 'toggle'; label: string; value: boolean };
 
-export type SegmentControl<T extends string = string> = {
+export type SegmentControl<T extends string = string> = Base & {
   kind: 'segment';
   label: string;
   value: T;
@@ -55,6 +63,9 @@ export const range = (
   value: number,
   opts: Omit<RangeControl, 'kind' | 'label' | 'value'>,
 ): RangeControl => ({ kind: 'range', label, value, ...opts });
+
+/** `when(control, values => …)` — the same control, shown conditionally. */
+export const when = <C extends Control>(control: C, pred: Base['when']): C => ({ ...control, when: pred });
 
 export const toggle = (label: string, value: boolean): ToggleControl => ({ kind: 'toggle', label, value });
 
@@ -115,11 +126,13 @@ function Panel<S extends Schema>({
         </button>
       </div>
 
-      {entries.map(([key, control]) => (
-        <div key={key} className="border-t border-rule py-3">
-          <Row control={control} value={values[key]} onChange={(v) => set(key, v as Values<S>[typeof key])} />
-        </div>
-      ))}
+      {entries
+        .filter(([, control]) => !control.when || control.when(values as Record<string, unknown>))
+        .map(([key, control]) => (
+          <div key={key} className="border-t border-rule py-3">
+            <Row control={control} value={values[key]} onChange={(v) => set(key, v as Values<S>[typeof key])} />
+          </div>
+        ))}
     </div>
   );
 }

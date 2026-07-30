@@ -6,8 +6,10 @@ import type { ReactNode } from 'react';
 
    Monochrome on purpose: this grid is about *shape*, and a rainbow of tiles
    makes every layout look busy and identical. Depth comes from four ink tints
-   stepped by index; the one accent tile per grid gives the eye an anchor to
-   track while a layout reflows.
+   stepped by index. `accent` is for a tile the *case* is about — the pinned
+   block in case 02, the `cols`-pinned tiles in case 06 — and nothing else: an
+   inked tile with no stated reason sends the reader hunting for a rule that
+   isn't there.
    ───────────────────────────────────────────────────────────────────────────── */
 
 const TINTS = [

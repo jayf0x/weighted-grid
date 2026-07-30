@@ -15,11 +15,16 @@ about eight seconds. That rules out two common shapes:
   exhausting — it answers questions nobody has yet.
 
 What is left is the [Frontis](https://github.com/jayf0x/frontis) framing: *here is the core idea,
-here are two or three knobs, go play.* Each idea gets one **case** — as in showcase. Five cases, in
+here are two or three knobs, go play.* Each idea gets one **case** — as in showcase. Six cases, in
 reading order, opening on the single idea the library is built around (`weight`) and only then
-earning the right to talk about stretch caps and presets.
+earning the right to talk about fixed spans, stretch caps, presets, motion and width.
 
-The hero is the sixth thing and the only one with real content: photographs and runs of text among
+One case per *prop you would actually reach for*, and nothing else. An exhaustive prop matrix used to
+sit at case 02; it read as a spec sheet — every combination visible, no idea which one you wanted —
+and was replaced by a single pinned block against an elastic mosaic. The matrix survives as QA data
+(`showcases/report.ts`, `--case=0`), which is the job it was always doing well.
+
+The hero sits above all of them and is the only one with real content: photographs and runs of text among
 mostly-blank tiles, laid out by the library itself. It exists to answer "can this hold real
 content?" before any case has to argue it. Everything after it is monochrome on purpose — the cases
 are about *shape*, and a rainbow of tiles makes every layout look busy and identical.
@@ -32,10 +37,10 @@ A **technical drafting sheet**, executed warm rather than cold. Concretely:
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Hairlines to the edge      | Every structural rule runs past the content column to the viewport edge (`line-t`/`line-b`, a 200vw pseudo-element borrowed from the Tailwind site). Structure reads as a ruled sheet, not as cards. It also forces `overflow-x: clip` on `html` — see below.       |
 | Hatched margins            | The page's own margins carry the Tailwind 315° hatch between hairlines, `bg-fixed`. This does the architectural work a full-page dot lattice was doing badly: it marks *where the column is* rather than texturing everything, so it never competes with a grid.   |
-| Numbered cases             | "CASE 03/05" is how you refer to one out loud, in a review or in an agent prompt. Free navigation vocabulary.                                                                                                                                                     |
+| Numbered cases             | "CASE 03/06" is how you refer to one out loud, in a review or in an agent prompt. Free navigation vocabulary.                                                                                                                                                     |
 | Didone titles, set heavy   | Bodoni Moda at 600. Plates have historically been titled in a high-contrast face; it is also the one thing on the page nobody mistakes for a default.                                                                                                             |
 | Mono for anything measured | Every number that can change is IBM Plex Mono, tabular. If it is monospaced, you can change it.                                                                                                                                                                    |
-| One accent                 | Signal vermilion, and only on things that are live: the active tick, a tile you touched, the current value, the drag handle. Colour is a state, not decoration.                                                                                                    |
+| One accent                 | Signal vermilion, and only on things that are live *or named by the case*: the active tick, the current value, the drag handle, the pinned block case 02 is about. A tile inked for no stated reason is worse than no accent at all — it makes the reader hunt for a rule that isn't there. |
 | Hatch, never blank         | Negative space is hatched. On a page about how gaps get filled, an empty box reads as a bug.                                                                                                                                                                       |
 | CAD crosshair              | Two hairlines tracking the pointer across the whole page. Costs two CSS custom properties per animation frame; turns the page into one instrument surface. Fine pointers only, off for reduced motion.                                                             |
 
@@ -69,6 +74,7 @@ const SCHEMA = {
   nrCols: range("columns", 9, { min: 3, max: 16 }),
   fill: toggle("fillComponent", false),
   preset: segment("preset", "organic", ["organic", "mason"] as const),
+  seed: when(range("seed", 3, { min: 1, max: 12 }), (v) => v.preset === "organic"),
 };
 
 const { values, panel } = useControls(SCHEMA);
@@ -79,11 +85,20 @@ Three control kinds, deliberately. A case that needs a fourth is a case turning 
 and documentation belongs in the README. If a case ever genuinely needs a colour picker or a vector
 pad, that is the moment to reconsider Leva — not before.
 
-Two rules the cases follow, learned the hard way:
+`when(control, values => …)` is the one addition, and it exists to enforce the rule below: the
+presets case has one knob per preset (`seed` for organic, `brick` for mason) and shows only the one
+that does something. It hides rather than disables, because a greyed-out control still asks the
+reader to work out why.
+
+Three rules the cases follow, learned the hard way:
 
 - **Only knobs that belong to this case.** The presets case fixes `nrCols`/`count`/`gap` as
-  constants, because those are case 01's subject; repeating them would bury `seed` and `size`, which
-  are the only dials a preset actually has.
+  constants, because those are case 01's subject; repeating them would bury the one dial the preset
+  actually has.
+- **A knob that changes nothing is a bug.** `size` was on the presets case for both presets and did
+  nothing to `mason`; the stretch case's cap saturated at 1, so five of its six steps were
+  decoration. Both are fixed by tuning the case to the control (`report.ts`'s `pinnedSpans` is tuned
+  so *every* step of the cap closes something) rather than by explaining the control in prose.
 - **A caption is not a second README.** If a paragraph under the controls re-explains what the
   lede already said, delete it. The only prose that survives is prose that enables an interaction —
   "click a tile", "drag the orange edge".
@@ -98,13 +113,19 @@ short bottom fade keeps the cut reading as a window rather than a bug.
 
 ## Motion that stays subtle
 
-**`animatePosition` stays off.** This page had it on everywhere, and it was the single biggest
+**`animatePosition` stays off — except in the one case that is about motion.** This page had it on everywhere, and it was the single biggest
 source of visual noise: a control that reflows the grid moves nearly every tile, so animating
 position means the whole stage swims at once. The library defaults it to `false` for exactly this
 reason and the demo now respects that. `animateSize` alone is both calmer and more honest — a tile
 whose *size* didn't change doesn't animate at all, so the only thing that moves is the thing the
-control actually changed. On the stretch case that's 3 tiles out of 12, which is the point of the
+control actually changed. On the stretch case that's a handful of tiles out of 26, which is the point of the
 case.
+
+Case 05 is the exception, and shows why the rule is about *how many* items move rather than about
+the prop: four tiles, two sliding dividers, every tile nudging by a cell or two. That is the shape
+`animatePosition` was built for, and it's also the only honest way to demo `itemAnimation` — you
+cannot judge an easing curve on a stage where thirty tiles jump at once. Its curves are copied
+verbatim out of [easingwizard.com](https://easingwizard.com/), CSS `linear()` and all.
 
 **The transition curve is ours to pick, not the library's.** `itemAnimation` is a CSS `transition`
 value the library splices in verbatim (`@/showcase/motion.ts`'s `FLIP_TRANSITION`, currently `200ms
@@ -136,7 +157,10 @@ box, and wrong for a specimen: with three rows in a tall stage every tile become
 `weight={2}` stops looking like twice as much of anything.
 
 So the cases measure their stage and pass a px `rowHeight` equal to the column width
-(`useSquareRows`), which makes cells square and weights legible. The hero is the exception — it has
+(`useSquareRows`), which makes cells square and weights legible. Two cases invert that instead:
+cases 02 and 05 have to fill the stage *exactly* (a mosaic with a hole at the bottom, or a quadrant
+split that doesn't reach the edge, would both read as broken), so they keep `rowHeight="auto"` and
+pass a row count — measured, via `useSquareRowCount`, or fixed at N for the N×N quadrant grid. The hero is the exception — it has
 a designed height to fill, so it keeps `auto` and controls its aspect through *tile count* instead,
 which is why it drops to fewer tiles on a narrow stage.
 

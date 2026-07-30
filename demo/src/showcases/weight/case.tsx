@@ -14,8 +14,8 @@ const SCHEMA = {
   gap: range('gap', 6, { min: 0, max: 24, unit: 'px' }),
 };
 
-/** One number per item, and the grid works it out. Clicking a tile cycles its weight, which is the
- * whole point of the prop: nothing else about the layout is declared, and everything else moves. */
+/** `weight` on its own: no axis pinned anywhere, so every tile is a square whose side is its weight.
+ * Clicking cycles one tile's weight and everything after it reflows. */
 function Weight() {
   const { values, panel } = useControls(SCHEMA);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -33,7 +33,7 @@ function Weight() {
         <>
           {panel}
           <p className="mt-5 border-t border-rule pt-3 text-[13px] leading-relaxed text-ink-3">
-            Click any tile to cycle its weight 1 → 4. The ones you touch stay inked.
+            Click any tile to cycle its weight 1 → 4.
           </p>
         </>
       }
@@ -45,12 +45,7 @@ function Weight() {
             return (
               // biome-ignore lint/suspicious/noArrayIndexKey: specimen tiles are positional — the index *is* the identity
               <GridItem key={i} weight={w}>
-                <Tile
-                  n={w - 1}
-                  label={hasLabels ? `w${w}` : undefined}
-                  accent={weights[i] !== undefined}
-                  onClick={() => cycle(i)}
-                />
+                <Tile n={w - 1} label={hasLabels ? `w${w}` : undefined} onClick={() => cycle(i)} />
               </GridItem>
             );
           })}
@@ -62,8 +57,8 @@ function Weight() {
 
 export const showcase: Case = {
   id: 'weight',
-  title: 'One number',
-  lede: 'weight is flexbox flex, in two dimensions: how much of the grid do I get. Pin nothing and it drives both axes, so equal weights are equal squares.',
+  title: 'Weight',
+  lede: 'One number per item, relative to the others, like flex. With neither axis pinned it sizes both, so weight 2 is a 2×2 block and equal weights are equal squares.',
   props: ['weight', 'nrCols', 'gap'],
   Component: Weight,
 };

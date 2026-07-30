@@ -22,11 +22,7 @@ export function DataGrid({ data, ...overrides }: { data: ReportCase } & Omit<Gri
         return (
           // biome-ignore lint/suspicious/noArrayIndexKey: tiles are a fixed, ordered dataset
           <GridItem key={i} {...item}>
-            {kind === 'void' ? (
-              <Void />
-            ) : (
-              <Tile n={i} label={hasLabels ? spec : undefined} accent={i === data.tiles.length - 1} />
-            )}
+            {kind === 'void' ? <Void /> : <Tile n={i} label={hasLabels ? spec : undefined} />}
           </GridItem>
         );
       })}

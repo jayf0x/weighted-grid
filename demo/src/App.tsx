@@ -1,4 +1,3 @@
-import { FluidText } from '@jayf0x/fluidity-js';
 import { useMemo } from 'react';
 import { Backdrop } from '@/showcase/Backdrop';
 import { CaseProvider } from '@/showcase/Case';

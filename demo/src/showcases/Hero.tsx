@@ -18,13 +18,15 @@ const photo = (n: number) => `${import.meta.env.BASE_URL}organic/img-${n}.jpg`;
  * of text are enough to show the tiles hold arbitrary content and reflow with it. */
 const CONTENT: Record<number, { photo: number } | { text: string }> = {
   1: { photo: 3 },
-  4: { text: 'Any child, any content. The engine only decides how much room it gets.' },
+  4: {
+    text: 'Any child, any content. The engine only decides how much room it gets.',
+  },
   7: { photo: 0 },
   12: { photo: 6 },
   17: { text: 'Source order is preserved, always.' },
   21: { photo: 8 },
   28: { photo: 2 },
-  33: { text: 'Native CSS Grid underneath.' },
+  33: { text: 'Zero runtime dependencies. react is a peer.' },
 };
 
 /** Indices the cycler is allowed to touch — everything that isn't holding content. */
@@ -101,7 +103,10 @@ function Specimen() {
   );
 }
 
-const INSTALL = { bun: 'bun add weighted-grid', npm: 'npm i weighted-grid' } as const;
+const INSTALL = {
+  bun: 'bun add weighted-grid',
+  npm: 'npm i weighted-grid',
+} as const;
 type Manager = keyof typeof INSTALL;
 
 function Install() {
@@ -153,14 +158,18 @@ function Install() {
 const stagger = (i: number) => ({
   initial: { opacity: 0, y: 16 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.7, delay: 0.08 * i, ease: [0.22, 1, 0.36, 1] as const },
+  transition: {
+    duration: 0.7,
+    delay: 0.08 * i,
+    ease: [0.22, 1, 0.36, 1] as const,
+  },
 });
 
 export function Hero({ version }: { version: string }) {
   return (
     <header className="grid items-center gap-10 py-16 lg:min-h-[78vh] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16 lg:py-24">
       <div className="min-w-0">
-        <motion.p {...stagger(0)} className="spec">
+        <motion.p {...stagger(0)} className="spec bg-accent w-fit">
           weighted-grid <span className="text-ink-3">·</span> v{version}
         </motion.p>
 
@@ -168,18 +177,23 @@ export function Hero({ version }: { version: string }) {
           {...stagger(1)}
           className="headline mt-6 text-[clamp(3rem,7.5vw,5.75rem)] leading-[0.92] text-balance"
         >
-          A grid that
+          Sized by weight.
           <br />
-          works out
-          <span className="text-accent"> the rest</span>.
+          Rendered as
+          <span className="text-accent"> CSS Grid</span>.
         </motion.h1>
 
         <motion.p {...stagger(2)} className="mt-7 max-w-[46ch] text-[15px] leading-relaxed text-ink-2 text-pretty">
-          Give each child a weight — how much of the grid it gets — and the placement engine sizes both axes, fills the
-          gaps, and keeps your source order.
+          Per item and per axis: a relative weight, an exact span, or one of each. Empty cells go to whichever elastic
+          neighbour can reach them, and the rest to a fill component. Source order never changes.
         </motion.p>
 
-        <motion.div {...stagger(3)} className="mt-9 flex flex-col gap-4">
+        <motion.p {...stagger(3)} className="mt-4 max-w-[46ch] text-[14px] leading-relaxed text-ink-3">
+          It exists because an organic project index needs both: room to place things by hand, and a rule that fills in
+          everything you didn't. The grids I tried wanted a layout per breakpoint and gave nothing to compute with.
+        </motion.p>
+
+        <motion.div {...stagger(4)} className="mt-9 flex flex-col gap-4">
           <Install />
           <a
             href="#weight"

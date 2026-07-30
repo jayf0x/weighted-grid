@@ -10,11 +10,11 @@
 
 <!-- README_HEAD:END -->
 
-**Weight in, layout out.**
+**Sized by weight. Rendered as native CSS Grid.**
 
-Say how big each item should feel, not where it goes. The grid places items in source order,
-fills the container, and grows elastic items into whatever space is left. Native CSS Grid does
-the rendering; the JS only decides spans.
+Per item and per axis: a relative `weight`, an exact `cols`/`rows` span, or one of each. The grid
+places items in source order, grows the elastic ones into leftover space, and hands whatever is
+still empty to a fill component. The JS only decides spans — CSS Grid does the rendering.
 
 ![Preview](./assets/preview.png)
 

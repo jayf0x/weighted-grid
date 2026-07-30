@@ -23,8 +23,9 @@ const SCHEMA = {
 };
 
 /** Dead zones, in one pass: elastic axes grow into the gaps first, fairly, and only what nothing
- * could reach is left for `fillComponent`. The strict tiles in this dataset box in enough space
- * that both mechanisms have visible work to do across the cap's whole range. */
+ * could reach is left for `fillComponent`. The dataset is tuned (see `report.ts`) so that *every*
+ * step of the cap closes something the step below it couldn't, and a handful of boxed-in cells
+ * survive even at ∞ — otherwise half this control would be decoration. */
 function Stretch() {
   const { values, panel } = useControls(SCHEMA);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -48,8 +49,8 @@ function Stretch() {
 
 export const showcase: Case = {
   id: 'stretch',
-  title: 'Nothing left over',
-  lede: 'Raise the cap and elastic tiles absorb the gaps around them, split evenly between neighbours. Whatever stays boxed in is merged into rectangles and handed to fillComponent.',
-  props: ['stretch', 'fillComponent'],
+  title: 'Stretch',
+  lede: 'Empty cells, in one pass. Elastic tiles grow into the gaps beside them — up to stretch cells each, split evenly between the tiles flanking a gap. What no elastic neighbour can reach is merged into rectangles and handed to fillComponent.',
+  props: ['stretch', 'fillComponent', 'showGrid'],
   Component: Stretch,
 };

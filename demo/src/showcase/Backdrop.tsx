@@ -1,10 +1,12 @@
-import { FluidImage, FluidText } from '@jayf0x/fluidity-js';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BackgroundHatch } from '@/components/BackgroundHatch';
+
+/** Half of `App.tsx`'s 80rem content column — the hatched margins are anchored to it, so the two
+ * numbers have to move together. */
+const HALF_COLUMN = 'calc(50% + 40rem)';
 
 export function Backdrop() {
   const [isLive, setLive] = useState(false);
-  const fluidRef = useRef<FluidHandle>(null);
 
   useEffect(() => {
     if (!window.matchMedia('(pointer: fine)').matches) return;
@@ -26,7 +28,6 @@ export function Backdrop() {
       x = e.clientX;
       y = e.clientY;
 
-      fluidRef.current?.move(x, y, 1);
       // one write per frame — pointermove fires far more often than the compositor paints
       if (!frame) frame = requestAnimationFrame(write);
       if (!live) {
@@ -43,34 +44,11 @@ export function Backdrop() {
   }, []);
 
   return (
-    <div
-      // aria-hidden
-      className="pointer-events-auto fixed inset-0 -z-10 overflow-hidden"
-    >
-      <BackgroundHatch className="w-10 h-screen absolute inset-0" />
-      {/* <BackgroundHatch className="w-screen h-screen absolute inset-0 opacity-25" /> */}
-      {/* 
-      <FluidText
-        ref={fluidRef}
-        text=""
-        className="w-full h-full absolute inset-0 z-10 bg-transparent"
-        backgroundColor="transparent"
-        splatRadius={0.1}
-        waterColor={window
-          .getComputedStyle(document.body)
-          .getPropertyValue("--accent")}
-      /> */}
-
-      {/* <FluidImage
-        ref={fluidRef}
-        src="/logo.png"
-        className="w-full h-full absolute inset-0 z-10 bg-transparent opacity-5"
-        backgroundColor="transparent"
-        splatRadius={0.1}
-        // waterColor={window
-        //   .getComputedStyle(document.body)
-        //   .getPropertyValue("--accent")}
-      /> */}
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      {/* The margins either side of the content column. Both collapse to zero width below 80rem,
+          which is exactly when there is no margin left to hatch. */}
+      <BackgroundHatch className="absolute inset-y-0 left-0 border-r border-rule" style={{ right: HALF_COLUMN }} />
+      <BackgroundHatch className="absolute inset-y-0 right-0 border-l border-rule" style={{ left: HALF_COLUMN }} />
 
       {/* the paper falls off at the edges so the content column reads as lit */}
       <div

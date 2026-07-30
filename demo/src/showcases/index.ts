@@ -12,7 +12,7 @@ const sources = import.meta.glob('./*/case.tsx', {
 
 /** Reading order. Explicit rather than alphabetical: the page opens on the single idea the library
  * is built around and only then earns the right to talk about edge cases. */
-const ORDER = ['weight', 'pinning', 'stretch', 'presets', 'responsive'] as const;
+const ORDER = ['weight', 'pinning', 'stretch', 'presets', 'animation', 'responsive'] as const;
 
 const byId = new Map(Object.values(modules).map((m) => [m.showcase.id, m.showcase]));
 const pathById = new Map(Object.entries(modules).map(([path, m]) => [m.showcase.id, path]));
