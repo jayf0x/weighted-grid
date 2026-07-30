@@ -101,10 +101,5 @@
   "homepage": "https://github.com/jayf0x/weighted-grid#readme",
   "bugs": {
     "url": "https://github.com/jayf0x/weighted-grid/issues"
-  },
-  "dependencies": {
-    "@jayf0x/fluidity-js": "^1.2.3",
-    "react-colorful": "^5.8.0",
-    "react-tiny-popover": "^8.1.6"
   }
 }
