@@ -100,7 +100,7 @@ if (isInternalOnly) {
   const readme = await Bun.file(README).text();
   const rows = (taglRead(readme, 'WHATSNEW') ?? '')
     .split('\n')
-    .filter((line) => line.trim().startsWith('| `') && !line.trim().startsWith(`| \`${version}\``));
+    .filter((line: string) => line.trim().startsWith('| `') && !line.trim().startsWith(`| \`${version}\``));
   const table = [
     '| Version | Highlights |',
     '| ------- | ---------- |',
