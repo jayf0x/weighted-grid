@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Run opengrep security scan against src/ and demo/src/.
-# Called by the deploy workflow; can also be run locally.
+# Run opengrep security scan against src/.
+# Called by CI; can also be run locally.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -8,7 +8,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 RULES_DIR="$REPO_ROOT/config/opengrep/rules"
-SCAN_TARGETS=("$REPO_ROOT/src" "$REPO_ROOT/demo/src")
+SCAN_TARGETS=("$REPO_ROOT/src")
 # ──────────────────────────────────────────────────────────────────────────────
 
 if ! command -v opengrep &>/dev/null; then
